@@ -1,5 +1,6 @@
 # Object-Oriented Version of 99 lines Topology Optimization
 
+![Alt Text](example.png)
 
 ## General
 
@@ -70,3 +71,11 @@ Topology optimization
    10302 total number of degrees of freedom   0.5 of total volume allowed
    5.4 radius filter
 ```
+
+
+## Requirements
+
+Python > 3.6
+numba
+matplotlib
+numpy
