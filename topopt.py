@@ -15,26 +15,29 @@ def main(nelx,nely,volfrac,penal,rmin,ft):
 	Emin=1e-9
 	Emax=1.0
 	# dofs:
-	ndof = 2*(nelx+1)*(nely+1)
+	ndof = 2*(nelx+1)*(nely+1) # ndof  number of nodes in the nelx x nely volume
 	# Allocate design variables (as array), initialize and allocate sens.
-	x=volfrac * np.ones(nely*nelx,dtype=float)
+	x=volfrac * np.ones(nely*nelx,dtype=float) # distributing the material evenly in the design domain
 	xold=x.copy()
 	xPhys=x.copy()
-	g=0 # must be initialized to use the NGuyen/Paulino OC approach
+	g=0 # must be initialized to use the NGuyen/Paulino OC approach. In this code, we are solving the optimisation problem using Optimality Criteria OC method
 	dc=np.zeros((nely,nelx), dtype=float)
 	# FE: Build the index vectors for the for coo matrix format.
 	KE=lk()
-	edofMat=np.zeros((nelx*nely,8),dtype=int)
+	edofMat=np.zeros((nelx*nely,8),dtype=int) # a 2D matrix of nelx x nely lines and 8 columns
 	for elx in range(nelx):
 		for ely in range(nely):
-			el = ely+elx*nely
-			n1=(nely+1)*elx+ely
-			n2=(nely+1)*(elx+1)+ely
+			el = ely+elx*nely #
+			n1=(nely+1)*elx+ely # 
+			n2=(nely+1)*(elx+1)+ely 
 			edofMat[el,:]=np.array([2*n1+2, 2*n1+3, 2*n2+2, 2*n2+3,2*n2, 2*n2+1, 2*n1, 2*n1+1])
 	# Construct the index pointers for the coo format
-	iK = np.kron(edofMat,np.ones((8,1))).flatten()
-	jK = np.kron(edofMat,np.ones((1,8))).flatten()    
+	iK = np.kron(edofMat,np.ones((8,1))).flatten() #every line of edofMat is duplicated 8 times, then flattened => 1-D vector of nelx x nely x 8 elements
+	jK = np.kron(edofMat,np.ones((1,8))).flatten() #every element of each line vector of edofMat is duplicated 8 times, then flattened => 1-D vector of nelx x nely x 8 elements
+	
 	# Filter: Build (and assemble) the index+data vectors for the coo matrix format
+
+	# Filtering technique adopted is Mesh-independency with rmin = filter size. NB: if rmin < 1 => filter inactive
 	nfilter=nelx*nely*((2*(np.ceil(rmin)-1)+1)**2)
 	nfilter=nfilter.astype(int)
 	iH = np.zeros(nfilter)
@@ -57,17 +60,20 @@ def main(nelx,nely,volfrac,penal,rmin,ft):
 					sH[cc]=np.maximum(0.0,fac)
 					cc=cc+1
 	# Finalize assembly and convert to csc format
-	H=coo_matrix((sH,(iH,jH)),shape=(nelx*nely,nelx*nely)).tocsc()	
-	Hs=H.sum(1)
-	# BC's and support
-	dofs=np.arange(2*(nelx+1)*(nely+1))
+	H=coo_matrix((sH,(iH,jH)),shape=(nelx*nely,nelx*nely)).tocsc() # it constructs from the data array sH and the row indices iH and column indices jH a matrix of shape (nelx*nely,nelx*nely)
+	# we add the method tocsc to Convert this matrix to Compressed Sparse Column format. it is useful because it stores the element indices and values when these values are not null i.e. memory-wise more efficient
+	Hs=H.sum(1) # sum along the x axis => result = 1 column array of shape = (nelx x nely , 1) 
+	# if it was H.sum(0) => resut = 1 row array of shape = (1, nelx x nely )
+	
+	# Boundary Condition BC and support condition
+	dofs=np.arange(ndof)
 	fixed=np.union1d(dofs[0:2*(nely+1):2],np.array([2*(nelx+1)*(nely+1)-1]))
 	free=np.setdiff1d(dofs,fixed)
 	# Solution and RHS vectors
 	f=np.zeros((ndof,1))
 	u=np.zeros((ndof,1))
 	# Set load
-	f[1,0]=-1
+	f[1,0]=-1 # f[ndof-1,0]=-1 : vertical bottom right load ; f[2*nelx*(nely+1)+1,0]=-1 : verical upper right load
 	# Initialize plot and plot the initial design
 	plt.ion() # Ensure that redrawing is possible
 	fig,ax = plt.subplots()
@@ -125,17 +131,33 @@ def main(nelx,nely,volfrac,penal,rmin,ft):
 	return xPhys
 #element stiffness matrix
 def lk():
+	"""
+	This function returns the element stiffness matrix.
+	Since the element stiffness matrix for solid material is the same for all elements, 
+	thus this function is only called once in the main code KE=lk()
+	Parameters
+	----------
+	Default params
+	E : elastic Young's modulus
+	nu : poisson ratio = - transversal strain/axial strain
+
+	Returns
+	-------
+	np.array
+		8x8 array containing the stiffness information
+
+	"""
 	E=1
 	nu=0.3
 	k=np.array([1/2-nu/6,1/8+nu/8,-1/4-nu/12,-1/8+3*nu/8,-1/4+nu/12,-1/8-nu/8,nu/6,1/8-3*nu/8])
 	KE = E/(1-nu**2)*np.array([ [k[0], k[1], k[2], k[3], k[4], k[5], k[6], k[7]],
-	[k[1], k[0], k[7], k[6], k[5], k[4], k[3], k[2]],
-	[k[2], k[7], k[0], k[5], k[6], k[3], k[4], k[1]],
-	[k[3], k[6], k[5], k[0], k[7], k[2], k[1], k[4]],
-	[k[4], k[5], k[6], k[7], k[0], k[1], k[2], k[3]],
-	[k[5], k[4], k[3], k[2], k[1], k[0], k[7], k[6]],
-	[k[6], k[3], k[4], k[1], k[2], k[7], k[0], k[5]],
-	[k[7], k[2], k[1], k[4], k[3], k[6], k[5], k[0]] ]);
+								[k[1], k[0], k[7], k[6], k[5], k[4], k[3], k[2]],
+								[k[2], k[7], k[0], k[5], k[6], k[3], k[4], k[1]],
+								[k[3], k[6], k[5], k[0], k[7], k[2], k[1], k[4]],
+								[k[4], k[5], k[6], k[7], k[0], k[1], k[2], k[3]],
+								[k[5], k[4], k[3], k[2], k[1], k[0], k[7], k[6]],
+								[k[6], k[3], k[4], k[1], k[2], k[7], k[0], k[5]],
+								[k[7], k[2], k[1], k[4], k[3], k[6], k[5], k[0]] ]);
 	return (KE)
 # Optimality criterion
 def oc(nelx,nely,x,volfrac,dc,dv,g):
@@ -159,7 +181,7 @@ if __name__ == "__main__":
 	nelx=180
 	nely=60
 	volfrac=0.4
-	rmin=5.4
+	rmin=5.4 # filter size, if rmin < 1 => filter inactive
 	penal=3.0
 	ft=1 # ft==0 -> sens, ft==1 -> dens
 	import sys
