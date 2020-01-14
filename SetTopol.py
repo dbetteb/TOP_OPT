@@ -37,7 +37,7 @@ class TopolSettings(object):
 		self.__Hs = self.__H.sum(1)
 		self.__g = 0.
 
-		self.__f = np.zeros((self.__ndof, 1))
+		# self.__f = np.zeros((self.__ndof, 1))
 		self.__fixed = np.arange(self.__ndof)
 		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof)[1:]
 
@@ -147,7 +147,6 @@ class TopolSettings(object):
 		self.__H = coo_matrix((self.__sH,(self.__iH, self.__jH)), shape=(self.__nx*int(value), self.__nx*int(value))).tocsc()
 		self.__Hs = self.__H.sum(1)
 		self.__free, self.__f, self.__u = createBCsupport(self.__nx, int(value), self.__ndof)[1:]
-
 
 	ny = property(__getny, __setny)
 
@@ -273,10 +272,10 @@ class TopolSettings(object):
 
 	free = property(__getfree, __setfree)
 
-	def __getf(self):
+	def getf(self):
 		return self.__f
 
-	def __setf(self, value, node=(self.__nx+1)*self.__ny,0, teta=0.0):
+	def setf(self, value, node=0, teta=0.0):
 		"""
 		Sets the loads vector according to the position (node), orientation (teta) and intensity (value) chosen by the user
 
@@ -297,7 +296,7 @@ class TopolSettings(object):
 		and Fx = load intensity along the x-axis = value*cos(teta)
 		and Fy = load intensity along the y-axis = value*sin(teta)
 
-		here node=(__nx+1)*__ny => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
+		if node=(__nx+1)*__ny => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
 		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
 		
 		####################################
@@ -324,12 +323,12 @@ class TopolSettings(object):
 		self.__f = f
 
 
-	f = property(__getf, __setf)
+	f = property(getf, setf)
 
-	def __getfixed(self):
+	def getfixed(self):
 		return self.__fixed
 
-	def __setfixed(self, list_nodes):
+	def setfixed(self, list_nodes):
 		""" 
 		Sets the fixed nodes chosen by the user
 		NB: this function triggers simultaneously self.__free
@@ -362,7 +361,7 @@ class TopolSettings(object):
 		self.__free = free 
 
 
-	fixed = property(__getfixed, __setfixed)
+	fixed = property(getfixed, setfixed)
 
 	def __setu(self, value):
 		print("Cannot be changed")
@@ -458,10 +457,9 @@ class TopolSettings(object):
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
 			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			print("Saving plot ... ")
+			fig.savefig('./volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'.jpeg')
 		return fig
-
-
-
 
 
 @jit(nopython=True)
@@ -494,7 +492,7 @@ def createedofmat(nx, ny):
 			n1 = (ny+1)*elx+ely
 			n2 = (ny+1)*(elx+1)+ely
 			edofMat[el,:]=np.array([2*n1+2, 2*n1+3, 2*n2+2, 2*n2+3,2*n2, 2*n2+1, 2*n1, 2*n1+1])
-	return edofMat, kr(edofMat, 8,1), kr(edofMat, 1,8)
+	return edofMat, np.kron(edofMat,np.ones((8,1))).flatten(), np.kron(edofMat,np.ones((1,8))).flatten()# kr(edofMat, 8,1), kr(edofMat, 1,8), np.kron(edofMat,np.ones((8,1))).flatten()
 
 
 @jit(nopython=True)
