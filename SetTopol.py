@@ -311,8 +311,8 @@ class TopolSettings(object):
 		DOES F FOLLOW THE SAME CONSTRAINTS AS THE FIXED NODES I.E. COULD WE ONLY APPLY F ON EDGE NODES OR EVERYWHERE?
 
 		"""
-		if (node < 0) or (node > (self.__nx+1)*(self.__ny+1) - 1):
-			print("Invalid node number "+ str(node), ". Node number should be >0 and <="+ str((self.__nx+1)*(self.__ny+1) - 1))
+		if (node < 0) or (node > (self.nx+1)*(self.ny+1) - 1):
+			print("Invalid node number "+ str(node), ". Node number should be >0 and <="+ str((self.nx+1)*(self.ny+1) - 1))
 			print("The load will be set on the 1st node: N0")
 			node = 0
 		
@@ -322,7 +322,7 @@ class TopolSettings(object):
 		Fx = value*np.cos(teta*np.pi/180)
 		Fy = value*np.sin(teta*np.pi/180)
 		
-		f = np.zeros((self.__ndof, 1))
+		f = np.zeros((self.ndof, 1))
 		f[x_pos, 0] = Fx
 		f[y_pos, 0] = Fy
 
@@ -358,13 +358,13 @@ class TopolSettings(object):
 		fixed_nodes_numbers = np.arange((ny+1)*nx, (nx+1)*(ny+1)).tolist()================> all the right side is fixed
 		
 		"""
-		possible_fixed_nodes = np.arange(0, self.__ny+1).tolist()+ [m*(self.__ny +1)-1 for m in range(2,self.__nx+1)] + [m*(self.__ny+1) for m in range(1,self.__nx)] + np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist() 
+		possible_fixed_nodes = np.arange(0, self.ny+1).tolist()+ [m*(self.ny +1)-1 for m in range(2,self.nx+1)] + [m*(self.ny+1) for m in range(1,self.nx)] + np.arange((self.ny+1)*self.nx, (self.nx+1)*(self.ny+1)).tolist() 
 		if (len(set(list_nodes)-set(possible_fixed_nodes))>0):
 			print("Invalid node numbers "+ str(set(list_nodes)-set(possible_fixed_nodes)), ". A fixed Node can only be one of the following list :"+ str(possible_fixed_nodes))
 			print("The load will be set on the 1st node: N0")
 			node = 0
 		
-		dofs = np.arange(self.__ndof)
+		dofs = np.arange(self.ndof)
 		fixed = []
 		for node in list_nodes:
 			x_pos = 2*node
@@ -478,17 +478,17 @@ class TopolSettings(object):
 			print("Saving plot ... ")
 			fixed_part = str(self.__fixed)
 
-			if (len(set(self.__list_fixed_nodes)- set(np.arange(0,self.__ny+1).tolist()))==0):
+			if (len(set(self.__list_fixed_nodes)- set(np.arange(0,self.ny+1).tolist()))==0):
 				fixed_part = "left_side"
-			elif (len(set(self.__list_fixed_nodes)- set([m*(self.__ny+1) for m in range(0,self.__nx+1)]))==0):
+			elif (len(set(self.__list_fixed_nodes)- set([m*(self.__ny+1) for m in range(0,self.nx+1)]))==0):
 				fixed_part = "upper_side"
-			elif (len(set(self.__list_fixed_nodes)-set([m*(self.__ny+1)-1 for m in range(1,self.__nx+2)]))==0):
+			elif (len(set(self.__list_fixed_nodes)-set([m*(self.__ny+1)-1 for m in range(1,self.nx+2)]))==0):
 				fixed_part = "bottom_side"
-			elif (len(set(self.__list_fixed_nodes)-set(np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist()))==0):
+			elif (len(set(self.__list_fixed_nodes)-set(np.arange((self.ny+1)*self.nx, (self.nx+1)*(self.ny+1)).tolist()))==0):
 				fixed_part = "right_side"
 			else:
 				fixed_part = "complex"
-			fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensity_'+str(self.__valuef)+'_orientation_'+str(self.__teta)+'_on_node_number_'+str(self.__node)+'_fixed_on_nodes'+str(fixed_part)+'.jpeg')
+			fig.savefig('./data/volfrac_'+str(self.vol)+'_rmin_'+str(self.rmin)+'_ft_'+str(self.filt)+'_load_of_intensity_'+str(self.__valuef)+'_orientation_'+str(self.__teta)+'_on_node_number_'+str(self.__node)+'_fixed_on_nodes'+str(fixed_part)+'.jpeg')
 		return fig
 
 
