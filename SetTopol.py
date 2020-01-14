@@ -10,7 +10,7 @@ from ElemMatrix import lk
 import matplotlib.pyplot as plt
 from matplotlib import animation
 import time
-
+from toto import kr
 
 class TopolSettings(object):
 	OC_ITER = 60
@@ -37,6 +37,8 @@ class TopolSettings(object):
 		self.__Hs = self.__H.sum(1)
 		self.__g = 0.
 
+		self.__f = np.zeros((self.__ndof, 1))
+		self.__fixed = np.arange(self.__ndof)
 		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof)[1:]
 
 	def __repr__(self):
@@ -274,10 +276,93 @@ class TopolSettings(object):
 	def __getf(self):
 		return self.__f
 
-	def __setf(self, value):
-		print("Cannot be changed")
+	def __setf(self, value, node=(self.__nx+1)*self.__ny,0, teta=0.0):
+		"""
+		Sets the loads vector according to the position (node), orientation (teta) and intensity (value) chosen by the user
+
+		Parameters
+		----------
+		value
+			float : load intensity in Newton
+		node
+			int : the node number where we want to apply the load; the nodes are numbered column-wise from the left of the rectangle to its right from 0 to (__nx+1)*(__ny+1) - 1
+		teta
+			float : load orientation in degrees
+
+		NB: 
+		__ndof = 2*(__nx+1)*(__ny +1)
+		in a __nx*__ny volume, there are (__nx+1)*(__ny+1) nodes each having 2 degrees of freedom the horizontal
+		and the vertical displacements
+		Thus, __f is = [[Fx0], [Fy0], [Fx1], [Fy1], ..., [Fxn], [Fyn]] such that n = (1+__nx)*(1+__ny) - 1
+		and Fx = load intensity along the x-axis = value*cos(teta)
+		and Fy = load intensity along the y-axis = value*sin(teta)
+
+		here node=(__nx+1)*__ny => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
+		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
+		
+		####################################
+		############# QUESTION #############
+		####################################
+		DOES F FOLLOW THE SAME CONSTRAINTS AS THE FIXED NODES I.E. COULD WE ONLY APPLY F ON EDGE NODES OR EVERYWHERE?
+
+		"""
+		if (node < 0) or (node > (self.__nx+1)*(self.__ny+1) - 1):
+			print("Invalid node number "+ str(node), ". Node number should be >0 and <="+ str((self.__nx+1)*(self.__ny+1) - 1))
+			print("The load will be set on the 1st node: N0")
+			node = 0
+		
+		x_pos = 2*node
+		y_pos = x_pos+1
+
+		Fx = value*np.cos(teta*np.pi/180)
+		Fy = value*np.sin(teta*np.pi/180)
+		
+		f = np.zeros((self.__ndof, 1))
+		f[x_pos, 0] = Fx
+		f[y_pos, 0] = Fy
+
+		self.__f = f
+
 
 	f = property(__getf, __setf)
+
+	def __getfixed(self):
+		return self.__fixed
+
+	def __setfixed(self, list_nodes):
+		""" 
+		Sets the fixed nodes chosen by the user
+		NB: this function triggers simultaneously self.__free
+
+		Parameters
+		----------
+		list_nodes
+			List[int] : the list of node numbers where we want to fix the object; the nodes are numbered column-wise from the left of the rectangle to its right from 0 to (__nx+1)*(__ny+1) - 1
+
+		NB: we can only fix edge nodes i.e. contour nodes of the rectangle, here called possible_fixed_nodes
+		one example a nx = 4, ny = 2 rectangle has as edge nodes [0,1,2,3,5,6,8,9,11,12,13,14]
+		
+		"""
+		possible_fixed_nodes = np.arange(0, self.__ny+1).tolist()+ [m*(self.__ny +1)-1 for m in range(2,self.__nx+1)] + [m*(self.__ny+1) for m in range(1,self.__nx)] + np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist() 
+		if (len(set(list_nodes)-set(possible_fixed_nodes))>0):
+			print("Invalid node numbers "+ str(set(list_nodes)-set(possible_fixed_nodes)), ". A fixed Node can only be one of the following list :"+ str(possible_fixed_nodes))
+			print("The load will be set on the 1st node: N0")
+			node = 0
+		
+		dofs = np.arange(self.__ndof)
+		fixed = []
+		for node in list_nodes:
+			x_pos = 2*node
+			y_pos = x_pos+1
+			fixed = fixed + [x_pos, y_pos]
+
+		free  = np.setdiff1d(dofs, fixed)
+
+		self.__fixed = fixed
+		self.__free = free 
+
+
+	fixed = property(__getfixed, __setfixed)
 
 	def __setu(self, value):
 		print("Cannot be changed")
@@ -409,7 +494,7 @@ def createedofmat(nx, ny):
 			n1 = (ny+1)*elx+ely
 			n2 = (ny+1)*(elx+1)+ely
 			edofMat[el,:]=np.array([2*n1+2, 2*n1+3, 2*n2+2, 2*n2+3,2*n2, 2*n2+1, 2*n1, 2*n1+1])
-	return edofMat, np.kron(edofMat, np.ones((8,1))).flatten(), np.kron(edofMat, np.ones((1,8))).flatten()
+	return edofMat, kr(edofMat, 8,1), kr(edofMat, 1,8)
 
 
 @jit(nopython=True)
