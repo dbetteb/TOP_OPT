@@ -37,8 +37,14 @@ class TopolSettings(object):
 		self.__Hs = self.__H.sum(1)
 		self.__g = 0.
 
-		# self.__f = np.zeros((self.__ndof, 1))
+		self.__f = np.zeros((self.__ndof, 1))
+		###### f properties ######
+		self.__node = 0
+		self.__teta = 0
+		self.__valuef = 0.0
+		#########################
 		self.__fixed = np.arange(self.__ndof)
+		self.__list_fixed_nodes = []
 		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof)[1:]
 
 	def __repr__(self):
@@ -320,6 +326,10 @@ class TopolSettings(object):
 		f[x_pos, 0] = Fx
 		f[y_pos, 0] = Fy
 
+		self.__node = node
+		self.__teta = teta
+		self.__valuef = value
+
 		self.__f = f
 
 
@@ -340,6 +350,12 @@ class TopolSettings(object):
 
 		NB: we can only fix edge nodes i.e. contour nodes of the rectangle, here called possible_fixed_nodes
 		one example a nx = 4, ny = 2 rectangle has as edge nodes [0,1,2,3,5,6,8,9,11,12,13,14]
+
+		TIPS:
+		fixed_nodes_numbers = np.arange(0,ny+1).tolist()==================================> all the left side is fixed
+		fixed_nodes_numbers = [m*(ny+1) for m in range(0,nx+1)]===========================> all the upper side is fixed
+		fixed_nodes_numbers = [m*(ny +1)-1 for m in range(1,nx+2)]]=======================> all the bottom side is fixed
+		fixed_nodes_numbers = np.arange((ny+1)*nx, (nx+1)*(ny+1)).tolist()================> all the right side is fixed
 		
 		"""
 		possible_fixed_nodes = np.arange(0, self.__ny+1).tolist()+ [m*(self.__ny +1)-1 for m in range(2,self.__nx+1)] + [m*(self.__ny+1) for m in range(1,self.__nx)] + np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist() 
@@ -357,6 +373,7 @@ class TopolSettings(object):
 
 		free  = np.setdiff1d(dofs, fixed)
 
+		self.__list_fixed_nodes = list_nodes
 		self.__fixed = fixed
 		self.__free = free 
 
@@ -457,8 +474,21 @@ class TopolSettings(object):
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
 			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+
 			print("Saving plot ... ")
-			fig.savefig('./volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'.jpeg')
+			fixed_part = str(self.__fixed)
+
+			if (len(set(self.__list_fixed_nodes)- set(np.arange(0,self.__ny+1).tolist()))==0):
+				fixed_part = "left_side"
+			elif (len(set(self.__list_fixed_nodes)- set([m*(self.__ny+1) for m in range(0,self.__nx+1)]))==0):
+				fixed_part = "upper_side"
+			elif (len(set(self.__list_fixed_nodes)-set([m*(self.__ny+1)-1 for m in range(1,self.__nx+2)]))==0):
+				fixed_part = "bottom_side"
+			elif (len(set(self.__list_fixed_nodes)-set(np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist()))==0):
+				fixed_part = "right_side"
+			else:
+				fixed_part = "complex"
+			fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensity_'+str(self.__valuef)+'_orientation_'+str(self.__teta)+'_on_node_number_'+str(self.__node)+'_fixed_on_nodes'+str(fixed_part)+'.jpeg')
 		return fig
 
 
