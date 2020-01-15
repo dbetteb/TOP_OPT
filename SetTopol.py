@@ -356,9 +356,12 @@ class TopolSettings(object):
 		fixed_nodes_numbers = [m*(ny+1) for m in range(0,nx+1)]===========================> all the upper side is fixed
 		fixed_nodes_numbers = [m*(ny +1)-1 for m in range(1,nx+2)]]=======================> all the bottom side is fixed
 		fixed_nodes_numbers = np.arange((ny+1)*nx, (nx+1)*(ny+1)).tolist()================> all the right side is fixed
+
+		The fixed nodes in the list possible_fixed_nodes follow an anti-clockwise direction i.e. if nx = 4, ny = 2 
+		the edge nodes list is [0,1,2,5,8,11,14,13,12,9,6,3]
 		
 		"""
-		possible_fixed_nodes = np.arange(0, self.ny+1).tolist()+ [m*(self.ny +1)-1 for m in range(2,self.nx+1)] + [m*(self.ny+1) for m in range(1,self.nx)] + np.arange((self.ny+1)*self.nx, (self.nx+1)*(self.ny+1)).tolist() 
+		possible_fixed_nodes = np.arange(0, self.ny+1).tolist()+ [m*(self.ny +1)-1 for m in range(2,self.nx+1)] + np.sort(np.arange((self.ny+1)*top.nx, (self.nx+1)*(self.ny+1))).tolist()[::-1] + np.sort(np.asarray([m*(self.ny+1) for m in range(1,self.nx)])).tolist()[::-1]  
 		if (len(set(list_nodes)-set(possible_fixed_nodes))>0):
 			print("Invalid node numbers "+ str(set(list_nodes)-set(possible_fixed_nodes)), ". A fixed Node can only be one of the following list :"+ str(possible_fixed_nodes))
 			print("The load will be set on the 1st node: N0")
