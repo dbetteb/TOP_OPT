@@ -280,6 +280,19 @@ class TopolSettings(object):
 
 	free = property(__getfree, __setfree)
 
+	def __setnumber_of_loads(self, value):
+		if (value>0 and value<self.__ndof):
+			self.__number_of_loads = value
+		else:
+			print("Invalid Number of Loads. For a "+str(self.nx)+" x "+str(self.ny)+" volume, You can have 0 < Number_Of_Loads < "+ str(self.ndof))
+			print("Number_Of_Loads will be set to 1")
+			self.__number_of_loads = 1
+
+	def __getnumber_of_loads(self):
+		return self.__number_of_loads
+		
+	number_of_loads = property(__getnumber_of_loads, __setnumber_of_loads)
+
 	def getf(self):
 		return self.__f
 

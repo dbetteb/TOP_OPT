@@ -302,7 +302,7 @@ class TopolSettings(object):
 		and Fx = load intensity along the x-axis = value*cos(teta)
 		and Fy = load intensity along the y-axis = value*sin(teta)
 
-		if node=(__nx+1)*__ny => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
+		if node=(__ny+1)*__nx => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
 		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
 		
 		####################################
