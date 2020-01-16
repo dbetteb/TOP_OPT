@@ -40,13 +40,18 @@ class TopolSettings(object):
 		self.__number_of_loads = nbr_loads
 		self.__u = np.zeros((self.__ndof, self.__number_of_loads))
 		self.__f = np.zeros((self.__ndof, self.__number_of_loads))
-		###### f properties ######
-		self.__nodes = [0 for i in range(self.__number_of_loads)]
+		#################### f loads properties #####################
+		self.__load_nodes = [0 for i in range(self.__number_of_loads)]
 		self.__tetas = [0.0 for i in range(self.__number_of_loads)]
 		self.__valuefs = [0.0 for i in range(self.__number_of_loads)]
-		#########################
+		##############################################################
+		
+		################# fixed nodes properties #####################
 		self.__fixed = np.arange(self.__ndof)
 		self.__list_fixed_nodes = []
+		self.__fixed_part = ""
+		##############################################################
+
 		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof, self.__number_of_loads)[1:]
 
 	def __repr__(self):
@@ -290,13 +295,13 @@ class TopolSettings(object):
 
 	def __getnumber_of_loads(self):
 		return self.__number_of_loads
-		
+
 	number_of_loads = property(__getnumber_of_loads, __setnumber_of_loads)
 
 	def getf(self):
 		return self.__f
 
-	def setf(self, values, nodes=0, tetas=0.0):
+	def setf(self, values, nodes=[0], tetas=[0.0]):
 		"""
 		Sets the loads vector according to the position (node), orientation (teta) and intensity (value) chosen by the user
 
@@ -346,7 +351,7 @@ class TopolSettings(object):
 			f[x_pos, i] = Fx
 			f[y_pos, i] = Fy
 
-		self.__nodes = nodes
+		self.__load_nodes = nodes
 		self.__tetas = tetas
 		self.__valuefs = values
 
@@ -355,10 +360,34 @@ class TopolSettings(object):
 
 	f = property(getf, setf)
 
-	def getfixed(self):
+	def __setload_nodes(self, value):
+		print("It is set by the load setter.")
+
+	def __getload_nodes(self):
+		return sel.__load_nodes
+
+	load_nodes = property(__setload_nodes, __getload_nodes)
+
+	def __settetas(self, value):
+		print("It is set by the load setter.")
+
+	def __gettetas(self):
+		return self.__tetas
+
+	tetas = property(__settetas, __gettetas)
+
+	def __setvaluefs(self, value):
+		print("It is set by the load setter.")
+
+	def __getvaluefs(self):
+		return self.__valuefs
+
+	valuefs = property(__setvaluefs, __getvaluefs)
+
+	def __getfixed(self):
 		return self.__fixed
 
-	def setfixed(self, list_nodes):
+	def __setfixed(self, list_nodes):
 		""" 
 		Sets the fixed nodes chosen by the user
 		NB: this function triggers simultaneously self.__free
@@ -401,7 +430,33 @@ class TopolSettings(object):
 		self.__free = free 
 
 
-	fixed = property(getfixed, setfixed)
+	fixed = property(__getfixed, __setfixed)
+
+	def __setlist_fixed_nodes(self, value):
+		print("It is set by the fixed setter.")
+
+	def __getlist_fixed_nodes(self):
+		return self.__list_fixed_nodes
+
+	list_fixed_nodes = property(__setlist_fixed_nodes, __getlist_fixed_nodes)
+
+	def __setfixed_part(self, value):
+
+		if (len(set(self.list_fixed_nodes)- set(np.arange(0,self.ny+1).tolist()))==0):
+			self.__fixed_part = "left_side"
+		elif (len(set(self.list_fixed_nodes)- set([m*(self.ny+1) for m in range(0,self.nx+1)]))==0):
+			self.__fixed_part = "upper_side"
+		elif (len(set(self.list_fixed_nodes)-set([m*(self.ny+1)-1 for m in range(1,self.nx+2)]))==0):
+			self.__fixed_part = "bottom_side"
+		elif (len(set(self.list_fixed_nodes)-set(np.arange((self.ny+1)*self.nx, (self.nx+1)*(self.ny+1)).tolist()))==0):
+			self.__fixed_part = "right_side"
+		else:
+			self.__fixed_part = "complex"
+
+	def __getfixed_part(self):
+		return self.__fixed_part 
+		
+	fixed_part = property(__setfixed_part, __getfixed_part)
 
 	def __setu(self, value):
 		print("Cannot be changed")
@@ -459,7 +514,7 @@ class TopolSettings(object):
 			comp.append(obj)
 			########## multiple loads ############
 			dv[:] = np.ones(ny*nx)
-			if self.filt == 0:
+			if self.filt == 0: # mesh-independency filter method
 				dc[:] = np.asarray((self.H*(x*dc))[np.newaxis].T/self.Hs)[:,0] / np.maximum(0.001, x)
 			elif self.filt == 1:
 				dc[:] = np.asarray(self.H*(dc[np.newaxis].T/self.Hs))[:,0]
@@ -480,7 +535,7 @@ class TopolSettings(object):
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
 		print(f"Elapsed time : {telap} s")
-		self.comphist = comp
+		self.comphist = comp # list of objective function values
 		self.res = xphys
 		if store:
 			self.hist = hi
@@ -488,7 +543,7 @@ class TopolSettings(object):
 			self.cond = cd
 
 
-	def plot(self):
+	def plot(self, name='test_plot'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
@@ -505,19 +560,10 @@ class TopolSettings(object):
 			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
 
 			print("Saving plot ... ")
-			fixed_part = str(self.__fixed)
+			
 
-			if (len(set(self.__list_fixed_nodes)- set(np.arange(0,self.__ny+1).tolist()))==0):
-				fixed_part = "left_side"
-			elif (len(set(self.__list_fixed_nodes)- set([m*(self.__ny+1) for m in range(0,self.__nx+1)]))==0):
-				fixed_part = "upper_side"
-			elif (len(set(self.__list_fixed_nodes)-set([m*(self.__ny+1)-1 for m in range(1,self.__nx+2)]))==0):
-				fixed_part = "bottom_side"
-			elif (len(set(self.__list_fixed_nodes)-set(np.arange((self.__ny+1)*self.__nx, (self.__nx+1)*(self.__ny+1)).tolist()))==0):
-				fixed_part = "right_side"
-			else:
-				fixed_part = "complex"
-			fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.__valuefs)+'_orientations_'+str(self.__tetas)+'_on_node_number_'+str(self.__nodes)+'_fixed_on_nodes'+str(fixed_part)+'.jpeg')
+			fig.savefig('./data/'+name)
+			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
 		return fig
 
 
