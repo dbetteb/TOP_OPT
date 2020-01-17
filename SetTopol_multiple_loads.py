@@ -52,7 +52,11 @@ class TopolSettings(object):
 		self.__fixed_part = ""
 		##############################################################
 
-		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof, self.__number_of_loads)[1:]
+		self.__free = None
+
+		# self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof, self.__number_of_loads)[1:]
+
+		self.__comphist = []
 
 	def __repr__(self):
 		st =f"Topology optimization \n" \
@@ -285,6 +289,9 @@ class TopolSettings(object):
 
 	free = property(__getfree, __setfree)
 
+	def __getnumber_of_loads(self):
+		return self.__number_of_loads
+
 	def __setnumber_of_loads(self, value):
 		if (value>0 and value<self.__ndof):
 			self.__number_of_loads = value
@@ -292,9 +299,6 @@ class TopolSettings(object):
 			print("Invalid Number of Loads. For a "+str(self.nx)+" x "+str(self.ny)+" volume, You can have 0 < Number_Of_Loads < "+ str(self.ndof))
 			print("Number_Of_Loads will be set to 1")
 			self.__number_of_loads = 1
-
-	def __getnumber_of_loads(self):
-		return self.__number_of_loads
 
 	number_of_loads = property(__getnumber_of_loads, __setnumber_of_loads)
 
@@ -350,7 +354,7 @@ class TopolSettings(object):
 			
 			f[x_pos, i] = Fx
 			f[y_pos, i] = Fy
-
+		
 		self.__load_nodes = nodes
 		self.__tetas = tetas
 		self.__valuefs = values
@@ -360,29 +364,31 @@ class TopolSettings(object):
 
 	f = property(getf, setf)
 
+	def __getload_nodes(self):
+		return self.__load_nodes
+
 	def __setload_nodes(self, value):
 		print("It is set by the load setter.")
 
-	def __getload_nodes(self):
-		return sel.__load_nodes
+	load_nodes = property( __getload_nodes, __setload_nodes)
 
-	load_nodes = property(__setload_nodes, __getload_nodes)
-
-	def __settetas(self, value):
-		print("It is set by the load setter.")
 
 	def __gettetas(self):
 		return self.__tetas
 
-	tetas = property(__settetas, __gettetas)
+	def __settetas(self, value):
+		print("It is set by the load setter.")
+
+	tetas = property(__gettetas, __settetas)
+
+	
+	def __getvaluefs(self):
+		return self.__valuefs
 
 	def __setvaluefs(self, value):
 		print("It is set by the load setter.")
 
-	def __getvaluefs(self):
-		return self.__valuefs
-
-	valuefs = property(__setvaluefs, __getvaluefs)
+	valuefs = property( __getvaluefs, __setvaluefs)
 
 	def __getfixed(self):
 		return self.__fixed
@@ -429,16 +435,19 @@ class TopolSettings(object):
 		self.__fixed = fixed
 		self.__free = free 
 
-
 	fixed = property(__getfixed, __setfixed)
-
-	def __setlist_fixed_nodes(self, value):
-		print("It is set by the fixed setter.")
 
 	def __getlist_fixed_nodes(self):
 		return self.__list_fixed_nodes
 
-	list_fixed_nodes = property(__setlist_fixed_nodes, __getlist_fixed_nodes)
+	def __setlist_fixed_nodes(self, value):
+		print("It is set by the fixed setter.")
+
+
+	list_fixed_nodes = property( __getlist_fixed_nodes, __setlist_fixed_nodes)
+
+	def __getfixed_part(self):
+		return self.__fixed_part 
 
 	def __setfixed_part(self, value):
 
@@ -453,10 +462,7 @@ class TopolSettings(object):
 		else:
 			self.__fixed_part = "complex"
 
-	def __getfixed_part(self):
-		return self.__fixed_part 
-		
-	fixed_part = property(__setfixed_part, __getfixed_part)
+	fixed_part = property(__getfixed_part, __setfixed_part )
 
 	def __setu(self, value):
 		print("Cannot be changed")
@@ -535,12 +541,20 @@ class TopolSettings(object):
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
 		print(f"Elapsed time : {telap} s")
-		self.comphist = comp # list of objective function values
+		self.__comphist = comp # list of objective function values
 		self.res = xphys
 		if store:
 			self.hist = hi
 		if cond:
 			self.cond = cd
+
+	def __getcomphist(self):
+		return self.__comphist
+
+	def __setcomphist(self, value):
+		print("Historical internal data cannot be set")
+
+	comphist = property(__getcomphist, __setcomphist)
 
 
 	def plot(self, name='test_plot'):
