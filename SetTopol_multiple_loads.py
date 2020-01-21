@@ -57,6 +57,7 @@ class TopolSettings(object):
 		# self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof, self.__number_of_loads)[1:]
 
 		self.__comphist = []
+		self.time_required = 0.0
 
 	def __repr__(self):
 		st =f"Topology optimization \n" \
@@ -540,6 +541,7 @@ class TopolSettings(object):
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
+		self.time_required = telap
 		print(f"Elapsed time : {telap} s")
 		self.__comphist = comp # list of objective function values
 		self.res = xphys

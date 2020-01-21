@@ -30,6 +30,7 @@ def one_load_generate_design(params):
     list_final_objective_function_value = []
     list_all_objective_function_values = []
     list_design_references = []
+    list_time_required = []
 
     count = 0
     top = TopolSettings(nx = params['nx'], ny = params['ny'], nbr_loads = 1, vol = params['volfraction'], rmin = params['rmin'], penalinit = 3.0, penalmed = 3.0, filt = params['filt'], nu = 0.3)
@@ -76,6 +77,7 @@ def one_load_generate_design(params):
                     list_final_objective_function_value.append(top.comphist[-1])
                     list_all_objective_function_values.append(top.comphist)
                     list_design_references.append(datetime_info+'__'+str(count+1))
+                    list_time_required.append(top.time_required)
                     count +=1
                     
         return pd.DataFrame(data = {'nx':list_nx, 'ny':list_ny, 'volume_fraction':list_vol, 'filter_rmin': list_rmin, 
@@ -87,7 +89,7 @@ def one_load_generate_design(params):
                                         'fixed_nodes':list_fixed_nodes, 'type_fixed_nodes':list_type_fixed_nodes, 
                                         'final_objective_function_value':list_final_objective_function_value, 
                                         'all_objective_function_values':list_all_objective_function_values, 
-                                        'design_reference':list_design_references})
+                                        'design_reference':list_design_references, 'time_for_convergence': list_time_required})
                     
                     
  
