@@ -571,12 +571,13 @@ class TopolSettings(object):
 				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
+			fig.savefig('./data/'+name)
 			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
 
 			print("Saving plot ... ")
 			
 
-			fig.savefig('./data/'+name)
+			
 			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
 		return fig
 
