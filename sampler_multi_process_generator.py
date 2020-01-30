@@ -53,32 +53,40 @@ def generate_design(params):
             count +=1
     return "successfull"
                     
- 
                     
 if __name__ == "__main__" :
     print(os.cpu_count())
     volfractions = norm(loc=0.3, scale=0.1).ppf(lhs(50, samples=1)).reshape(50,)  # this gives the x values having y-values equal to volume_fraction
-    rmins = uniform(1.1, 6).ppf(lhs(50, samples=1)).reshape(50,) # rmin lower
+    # rmins_1 = uniform(1.1, 2).ppf(lhs(50, samples=1)).reshape(50,) #  0.1 < volume fraction < 0.4 => 1.1 < Rmin < 3 ; Rmin suit la loi uniforme (1.1, 3 )
+    # rmins_2 = uniform(2, 3).ppf(lhs(50, samples=1)).reshape(50,) #  0.4 < volume fraction < 0.6 => 2 < Rmin < 3 ; Rmin suit la loi uniforme (2, 3 )
+    # rmins_3 = uniform(3, 4).ppf(lhs(50, samples=1)).reshape(50,) # volume fraction > 0.6 => 3 < Rmin < 4; Rmin suit la loi uniforme (3, 4 )
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
     tetas = uniform(0, 60).ppf(lhs(10, samples=1)).reshape(10,).tolist()+  uniform(60, 130).ppf(lhs(20, samples=1)).reshape(20,).tolist() + uniform(140, 270).ppf(lhs(20, samples=1)).reshape(20,).tolist() 
     nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
-
-    nx = 50
-    ny = 50
-    window = int(nx/2)
+    windows = poisson(50).ppf(lhs(50, samples=1)).reshape(50,)
+    nx = 100
+    ny = 100
+    window = int(nx/2) #
     possible_fixed_nodes = np.arange(0, ny+1).tolist()+ [m*(ny +1)-1 for m in range(2,nx+1)] + np.sort(np.arange((ny+1)*nx, (nx+1)*(ny+1))).tolist()[::-1] + np.sort(np.asarray([m*(ny+1) for m in range(1,nx)])).tolist()[::-1]  
 
 
-    total_nbr_samples = 1
+    total_nbr_samples = 100
     params_list = []
     for cnt in range(total_nbr_samples):
         volfraction = random.choice(volfractions)
-        rmin = random.choice(rmins)
+        rmin = 1.2
+        if volfraction<0.4:
+            rmin = random.choice(rmins_1)
+        elif volfraction>=0.4 and volfraction<0.6:
+            rmin = random.choice(rmins_2)
+        else:
+            rmin = random.choice(rmins_3)
         filt = random.choice(filters)
         the_nbr_loads = int(random.choice(nbr_loads))
+        window = int(random.choice(windows))
         if the_nbr_loads >0:
             teta = random.sample(tetas, the_nbr_loads)
-            for i in  range(0, (ny +1 )*nx - window +1, int(nx/2)):
+            for i in  range(0, len(possible_fixed_nodes), int(nx/2)):
                 # fixed nodes
                 fixed_nodes = possible_fixed_nodes[i:i+window]
                 if(len(fixed_nodes) >1):
