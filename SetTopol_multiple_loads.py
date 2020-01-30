@@ -9,6 +9,7 @@ from scipy.sparse.linalg import spsolve
 from ElemMatrix import lk
 import matplotlib.pyplot as plt
 from matplotlib import animation
+import cv2
 import time
 from toto import kr
 
@@ -473,7 +474,9 @@ class TopolSettings(object):
 
 	u = property(__getu, __setu)
 
-
+	# @cuda.jit('void(float32, int16, int16, bool, bool, int16)')
+	# @staticmethod
+	# @jit(nopython=True)
 	def optimize(self, changecriteria = 1e-3, maxiter = 100, store=False, cond = False, loop_switch = 20):
 		"""
 		   main optimizer
@@ -542,7 +545,7 @@ class TopolSettings(object):
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
 		self.time_required = telap
-		print(f"Elapsed time : {telap} s")
+		print("Elapsed time :'", telap," s")
 		self.__comphist = comp # list of objective function values
 		self.res = xphys
 		if store:
@@ -563,25 +566,37 @@ class TopolSettings(object):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
-			fig, (ax1,ax2) = plt.subplots(ncols=2)
-			ims = []
-			for i in range(len(self.comphist)):
-				im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
-				im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
-				im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
-				asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
-				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
-				ax2.set_aspect(asp)
-				ims.append([im1,im2])
-			fig.savefig('./data/'+name)
-			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
-
 			print("Saving plot ... ")
-			
 
+			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255	
+			cv2.imwrite('./sample_data/design_'+name+'.png', design )
+			# design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+			# design.axes.get_xaxis().set_visible(False)
+			# design.axes.get_yaxis().set_visible(False)
+			# plt.margins(0,0)
+			# plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
+			
+			# plt.figure()
+			# plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
+			# plt.scatter(np.arange(len(self.comphist)), self.comphist, s=120, color='r')
+			# plt.savefig('./sample_data/loss_'+name+'.png')
+			# fig, (ax1,ax2) = plt.subplots(ncols=2)
+			# ax1.set_axis_off()
+			# ims = []
+			# for i in range(len(self.comphist)):
+			# 	im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+			# 	im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
+			# 	im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
+			# 	asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
+			# 	asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
+			# 	ax2.set_aspect(asp)
+			# 	ims.append([im1,im2])
+			
+			# fig.savefig('./'+name)
+			# animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
 			
 			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
-		return fig
+		# return fig
 
 
 @jit(nopython=True)
