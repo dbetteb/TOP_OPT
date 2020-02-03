@@ -1,7 +1,7 @@
 from SetTopol_multiple_loads import TopolSettings
 import numpy as np
 import random
-from multiprocessing import Pool
+from multiprocessing import Pool,RLock
 import datetime
 import os
 import json
@@ -9,6 +9,7 @@ import json
 from scipy.stats.distributions import norm, uniform, bernoulli, poisson
 from pyDOE import *
 
+file_lock=RLock()
 
 def generate_design(params):
 
@@ -26,7 +27,7 @@ def generate_design(params):
         # Plot and Save only and only if the OBJECTIVE FUNCTION VALUE decreased i.e. the optimization problem converged
         if (top.comphist[0]> top.comphist[-1]): #(top.comphist[0]/ top.comphist[-1] >= 5):
             datetime_info = str(datetime.datetime.now())[0:23].replace(':', '_').replace('.','_')
-            top.plot(name = datetime_info+'__'+str(count+1))
+            top.plot(name = datetime_info)
             data = {'nx':top.nx, 'ny':top.ny, 'volume_fraction':top.vol, 'filter_rmin': top.rmin, 
                     'initial_penalty':top.penalinit, 'med_penalty': top.penalmed, 
                     'mesh_independency_filter':top.filt,'poisson_ratio_nu':top.nu, 
@@ -36,21 +37,21 @@ def generate_design(params):
                     'fixed_nodes':top.list_fixed_nodes, 'type_fixed_nodes':top.fixed_part, 
                     'final_objective_function_value':top.comphist[-1], 
                     'all_objective_function_values':top.comphist, 
-                    'design_reference':datetime_info+'__'+str(count+1), 'time_for_convergence': top.time_required}
+                    'design_reference':datetime_info, 'time_for_convergence': top.time_required}
 
-            try:
-                print("Writing to json file ...")
-                with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json') as f:
-                    data_old = json.load(f)
+            with file_lock:
+                try:
+                    print("Writing to json file ...")
+                    with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json') as f:
+                        data_old = json.load(f)
 
-                data_old.append(data)
-            except:
-                data_old= [data]
+                    data_old.append(data)
+                except:
+                    data_old= [data]
 
-            with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json', 'w') as f:
-                json.dump(data_old, f)
+                with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json', 'w') as f:
+                    json.dump(data_old, f)
 
-            count +=1
     return "successfull"
                     
                     
@@ -61,7 +62,7 @@ if __name__ == "__main__" :
     # rmins_2 = uniform(2, 3).ppf(lhs(50, samples=1)).reshape(50,) #  0.4 < volume fraction < 0.6 => 2 < Rmin < 3 ; Rmin suit la loi uniforme (2, 3 )
     # rmins_3 = uniform(3, 4).ppf(lhs(50, samples=1)).reshape(50,) # volume fraction > 0.6 => 3 < Rmin < 4; Rmin suit la loi uniforme (3, 4 )
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
-    tetas = uniform(0, 60).ppf(lhs(10, samples=1)).reshape(10,).tolist()+  uniform(60, 130).ppf(lhs(20, samples=1)).reshape(20,).tolist() + uniform(140, 270).ppf(lhs(20, samples=1)).reshape(20,).tolist() 
+    tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(140, 270).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
     nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
     windows = poisson(50).ppf(lhs(50, samples=1)).reshape(50,)
     nx = 100
@@ -74,13 +75,13 @@ if __name__ == "__main__" :
     params_list = []
     for cnt in range(total_nbr_samples):
         volfraction = random.choice(volfractions)
-        rmin = 1.2
-        if volfraction<0.4:
-            rmin = random.choice(rmins_1)
-        elif volfraction>=0.4 and volfraction<0.6:
-            rmin = random.choice(rmins_2)
-        else:
-            rmin = random.choice(rmins_3)
+        rmin = 2.4 # after the first generation phase, we have concluded that rmin should be less than 3 and in the range 2 to 2.8
+        # if volfraction<0.4:
+        #     rmin = random.choice(rmins_1)
+        # elif volfraction>=0.4 and volfraction<0.6:
+        #     rmin = random.choice(rmins_2)
+        # else:
+        #     rmin = random.choice(rmins_3)
         filt = random.choice(filters)
         the_nbr_loads = int(random.choice(nbr_loads))
         window = int(random.choice(windows))
