@@ -28,6 +28,19 @@ def generate_design(params):
         if (top.comphist[0]> top.comphist[-1]): #(top.comphist[0]/ top.comphist[-1] >= 5):
             datetime_info = str(datetime.datetime.now())[0:23].replace(':', '_').replace('.','_')
             top.plot(name = datetime_info)
+            # d1 is the distance between node0 and the 1st fixed node
+            # d1 = index of 1st fixed node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
+            d1 = possible_fixed_nodes.index(top.list_fixed_nodes[0])/len(possible_fixed_nodes)
+            # d2 is the distance between node0 and the last fixed node
+            # d2 = index of lasst fixed node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
+            d2 = possible_fixed_nodes.index(top.list_fixed_nodes[-1])/len(possible_fixed_nodes)
+            # d3 is the distance between node0 and the load node
+            # NB: a load node here is an edge node
+            # d3 = index of load node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
+            # Since there could be N load nodes, d3 is a list of distances
+            d3 = [possible_fixed_nodes.index(l)/len(possible_fixed_nodes) for l in top.load_nodes ]
+            # d1, d2 and d3 are now borned parameters => GAN can easily learn to recreate them
+
             data = {'nx':top.nx, 'ny':top.ny, 'volume_fraction':top.vol, 'filter_rmin': top.rmin, 
                     'initial_penalty':top.penalinit, 'med_penalty': top.penalmed, 
                     'mesh_independency_filter':top.filt,'poisson_ratio_nu':top.nu, 
@@ -35,6 +48,7 @@ def generate_design(params):
                     'Young_modulus_Emax':top.Emax, 'load_nodes':top.load_nodes, 
                     'load_orientations':top.tetas, 'load_intensities':top.valuefs,
                     'fixed_nodes':top.list_fixed_nodes, 'type_fixed_nodes':top.fixed_part, 
+                    'distanceBetween_node0_1st_fixed_node': d1, 'distanceBetween_node0_last_fixed_node':d2, 'distanceBetween_node0_load_nodes':d3,
                     'final_objective_function_value':top.comphist[-1], 
                     'all_objective_function_values':top.comphist, 
                     'design_reference':datetime_info, 'time_for_convergence': top.time_required}
@@ -56,7 +70,9 @@ def generate_design(params):
                     
                     
 if __name__ == "__main__" :
+
     print(os.cpu_count())
+
     volfractions = norm(loc=0.3, scale=0.1).ppf(lhs(50, samples=1)).reshape(50,)  # this gives the x values having y-values equal to volume_fraction
     # rmins_1 = uniform(1.1, 2).ppf(lhs(50, samples=1)).reshape(50,) #  0.1 < volume fraction < 0.4 => 1.1 < Rmin < 3 ; Rmin suit la loi uniforme (1.1, 3 )
     # rmins_2 = uniform(2, 3).ppf(lhs(50, samples=1)).reshape(50,) #  0.4 < volume fraction < 0.6 => 2 < Rmin < 3 ; Rmin suit la loi uniforme (2, 3 )
@@ -71,9 +87,10 @@ if __name__ == "__main__" :
     possible_fixed_nodes = np.arange(0, ny+1).tolist()+ [m*(ny +1)-1 for m in range(2,nx+1)] + np.sort(np.arange((ny+1)*nx, (nx+1)*(ny+1))).tolist()[::-1] + np.sort(np.asarray([m*(ny+1) for m in range(1,nx)])).tolist()[::-1]  
 
 
-    total_nbr_samples = 100
+    total_nbr_samples = 1
     params_list = []
     for cnt in range(total_nbr_samples):
+        print("helllo")
         volfraction = random.choice(volfractions)
         rmin = 2.4 # after the first generation phase, we have concluded that rmin should be less than 3 and in the range 2 to 2.8
         # if volfraction<0.4:
