@@ -61,11 +61,12 @@ class TopolSettings(object):
 		self.time_required = 0.0
 
 	def __repr__(self):
-		st =f"Topology optimization \n" \
-		f"   {self.nx} elements in x_direction, {self.ny} elements in y direction \n" \
-		f"   {self.ndof} total number of degrees of freedom" \
-		f"   {self.vol} of total volume allowed\n" \
-		f"   {self.rmin} radius filter"
+		#st =f"Topology optimization \n" \
+		#f"   {self.nx} elements in x_direction, {self.ny} elements in y direction \n" \
+		#f"   {self.ndof} total number of degrees of freedom" \
+		#f"   {self.vol} of total volume allowed\n" \
+		#f"   {self.rmin} radius filter"
+		st= "Topology optimization \n" + str(self.nx) + " elements in x_direction, " + str(self.ny) + "elements in y direction \n" + str(self.ndof) + " total number of degrees of freedom" + str(self.vol) + " of total volume allowed\n" + str(self.rmin) + "radius filter"
 		return st
 
 
