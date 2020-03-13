@@ -120,8 +120,8 @@ if __name__ == "__main__" :
                         opposite_side_nodes = possible_fixed_nodes[starting_index: ] + possible_fixed_nodes[0:ending_index]
                     else:
                         opposite_side_nodes = possible_fixed_nodes[starting_index: ending_index]
-                    
-                    opposite_side_nodes = random.sample(opposite_side_nodes, int(the_nbr_loads))
+                    indices_load_nodes = np.linspace(0, len(opposite_side_nodes)-1, int(the_nbr_loads), dtype=int)
+                    opposite_side_nodes = [opposite_side_nodes[i] for i in indices_load_nodes]#random.sample(opposite_side_nodes, int(the_nbr_loads))
                     params_list.append( {'nx':nx, 'ny':ny, 'volfraction':volfraction, 'rmin':rmin, 'filt':filt, 'fixed_nodes':fixed_nodes,'nbr_loads':the_nbr_loads, 'load_nodes':opposite_side_nodes, 'teta':teta, 'window': window} )
 
     pool = Pool(processes = os.cpu_count()-2) 
