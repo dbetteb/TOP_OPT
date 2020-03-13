@@ -541,7 +541,7 @@ class TopolSettings(object):
 			if store:
 				hi.append(xphys.copy())
 			#print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
-					loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
