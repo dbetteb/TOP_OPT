@@ -337,6 +337,15 @@ class TopolSettings(object):
 		DOES F FOLLOW THE SAME CONSTRAINTS AS THE FIXED NODES I.E. COULD WE ONLY APPLY F ON EDGE NODES OR EVERYWHERE?
 
 		"""
+	# 	if BCtype == "MBB":
+	# 	dofs  = np.arange(ndofs)
+	# 	fixed = np.union1d(dofs[0:2*(ny+1):2], np.array([2*(nx+1)*(ny+1)-1]))
+	# 	free  = np.setdiff1d(dofs, fixed)
+	# 	f, u = np.zeros((ndofs, load_nbr)), np.zeros((ndofs, load_nbr))
+	# 	for i in range(load_nbr):
+	# 		f[:-1, i]=-1
+	# else:
+
 		f = np.zeros((self.ndof, self.__number_of_loads))
 		for i in range(self.__number_of_loads):
 			node = nodes[i]
@@ -505,6 +514,7 @@ class TopolSettings(object):
 			else:
 				penal = self.penalmed
 			sK=((KE.flatten()[np.newaxis]).T*(self.Emin+(xphys)**penal*(self.Emax-self.Emin))).flatten(order='F')
+		
 			K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
             # remove constrained dofs
 			K = K[self.free,:][:,self.free]

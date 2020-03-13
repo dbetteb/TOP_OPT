@@ -80,7 +80,7 @@ if __name__ == "__main__" :
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
     tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(140, 270).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
     nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
-    windows = poisson(50).ppf(lhs(50, samples=1)).reshape(50,)
+    windows = poisson(100).ppf(lhs(50, samples=1)).reshape(50,)
     nx = 100
     ny = 100
     window = int(nx/2) #
@@ -90,7 +90,6 @@ if __name__ == "__main__" :
     total_nbr_samples = 1
     params_list = []
     for cnt in range(total_nbr_samples):
-        print("helllo")
         volfraction = random.choice(volfractions)
         rmin = 2.4 # after the first generation phase, we have concluded that rmin should be less than 3 and in the range 2 to 2.8
         # if volfraction<0.4:
@@ -116,7 +115,6 @@ if __name__ == "__main__" :
                     element = fixed_nodes[(len(fixed_nodes) - 1 )]
                     starting_index = (possible_fixed_nodes.index(element)+nx)%len(possible_fixed_nodes)
                     ending_index = (possible_fixed_nodes.index(element)+2*nx)%len(possible_fixed_nodes)+1
-                    opposite_side_nodes = []
                     if ending_index<starting_index:
                         opposite_side_nodes = possible_fixed_nodes[starting_index: ] + possible_fixed_nodes[0:ending_index]
                     else:
