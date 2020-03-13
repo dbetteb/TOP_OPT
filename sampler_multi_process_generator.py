@@ -78,7 +78,7 @@ if __name__ == "__main__" :
     # rmins_2 = uniform(2, 3).ppf(lhs(50, samples=1)).reshape(50,) #  0.4 < volume fraction < 0.6 => 2 < Rmin < 3 ; Rmin suit la loi uniforme (2, 3 )
     # rmins_3 = uniform(3, 4).ppf(lhs(50, samples=1)).reshape(50,) # volume fraction > 0.6 => 3 < Rmin < 4; Rmin suit la loi uniforme (3, 4 )
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
-    tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(140, 270).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
+    tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(130, 180).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
     nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
     windows = poisson(100).ppf(lhs(50, samples=1)).reshape(50,)
     nx = 100
@@ -87,7 +87,7 @@ if __name__ == "__main__" :
     possible_fixed_nodes = np.arange(0, ny+1).tolist()+ [m*(ny +1)-1 for m in range(2,nx+1)] + np.sort(np.arange((ny+1)*nx, (nx+1)*(ny+1))).tolist()[::-1] + np.sort(np.asarray([m*(ny+1) for m in range(1,nx)])).tolist()[::-1]  
 
 
-    total_nbr_samples = 1
+    total_nbr_samples = 200
     params_list = []
     for cnt in range(total_nbr_samples):
         volfraction = random.choice(volfractions)
