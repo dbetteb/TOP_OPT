@@ -79,7 +79,7 @@ if __name__ == "__main__" :
     # rmins_3 = uniform(3, 4).ppf(lhs(50, samples=1)).reshape(50,) # volume fraction > 0.6 => 3 < Rmin < 4; Rmin suit la loi uniforme (3, 4 )
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
     tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(130, 180).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
-    nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
+    nbr_loads = [1,1,1]#poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
     windows = poisson(100).ppf(lhs(50, samples=1)).reshape(50,)
     nx = 100
     ny = 100
