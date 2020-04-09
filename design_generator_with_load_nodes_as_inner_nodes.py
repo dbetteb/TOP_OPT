@@ -33,14 +33,7 @@ def generate_design(params):
             d1 = possible_fixed_nodes.index(top.list_fixed_nodes[0])/len(possible_fixed_nodes)
             # d2 is the distance between node0 and the last fixed node
             # d2 = index of lasst fixed node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
-            d2 = possible_fixed_nodes.index(top.list_fixed_nodes[-1])/len(possible_fixed_nodes)
-            # d3 is the distance between node0 and the load node
-            # NB: a load node here is an edge node
-            # d3 = index of load node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
-            # Since there could be N load nodes, d3 is a list of distances
-            # d3 = [possible_fixed_nodes.index(l)/len(possible_fixed_nodes) for l in top.load_nodes ]
-            # d1, d2 and d3 are now borned parameters => GAN can easily learn to recreate them
-            
+            d2 = possible_fixed_nodes.index(top.list_fixed_nodes[-1])/len(possible_fixed_nodes) 
             # NB: a load node here is an inner node, it is best defined by its euclidean distance from node 0 and the angle between the left edge towards the line joining node 0 to current load node i
             # i.e. dl = the euclidean distance between node0 and the load node and cos_alpha_l = the angle between y-axis (the left edge) and d (d = line joining  node 0 to node i)
             # d = sqrt( dx(0,i)^2 + dy(0,i)^2) such that dx(0,i) = distance entre node 0 and load node i along the x axis and dy(0,i) = distance entre node 0 and load node i along the y axis => sqrt( dx(0,i)^2 + dy(0,i)^2) = euclidean distance
@@ -68,19 +61,20 @@ def generate_design(params):
                     'distanceBetween_node0_1st_fixed_node': d1, 'distanceBetween_node0_last_fixed_node':d2,
                     'EuclideandistanceBetween_node0_load_nodes':distance_to_loads, 
                     'CosineAngle_between_leftEdge_and_loadNode': cos_alpha_load,
-                    #'distanceBetween_node0_load_nodes':d3,
-                    'final_objective_function_value':top.comphist[-1], 
+                    'final_objective_function_value':float(top.comphist[-1]), 
                     'all_objective_function_values':top.comphist, 
                     'design_reference':datetime_info, 'time_for_convergence': top.time_required}
-
+            
             with file_lock:
                 try:
                     print("Writing to json file ...")
                     with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json') as f:
                         data_old = json.load(f)
-
+                    print('Rewriting...')
                     data_old.append(data)
+
                 except:
+                    print("Creating...")
                     data_old= [data]
 
                 with open('./parameters/sampler_design_generation_'+str(datetime.datetime.now())[0:10]+'.json', 'w') as f:
@@ -98,9 +92,9 @@ if __name__ == "__main__" :
     # rmins_2 = uniform(2, 3).ppf(lhs(50, samples=1)).reshape(50,) #  0.4 < volume fraction < 0.6 => 2 < Rmin < 3 ; Rmin suit la loi uniforme (2, 3 )
     # rmins_3 = uniform(3, 4).ppf(lhs(50, samples=1)).reshape(50,) # volume fraction > 0.6 => 3 < Rmin < 4; Rmin suit la loi uniforme (3, 4 )
     filters = bernoulli(0.5).ppf(lhs(50, samples=1)).reshape(50,) # either present (1) or absent (0)
-    tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(130, 180).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
+    tetas = uniform(0, 60).ppf(lhs(30, samples=1)).reshape(30,).tolist()+  uniform(60, 130).ppf(lhs(30, samples=1)).reshape(30,).tolist() + uniform(140, 270).ppf(lhs(30, samples=1)).reshape(30,).tolist() 
     nbr_loads = poisson(2).ppf(lhs(50, samples=1)).reshape(50,) # most probable nbr_loads is 2
-    windows = poisson(100).ppf(lhs(50, samples=1)).reshape(50,)
+    windows = poisson(50).ppf(lhs(50, samples=1)).reshape(50,)
     nx = 100
     ny = 100
     window = int(nx/2) #
@@ -118,7 +112,7 @@ if __name__ == "__main__" :
         #     rmin = random.choice(rmins_2)
         # else:
         #     rmin = random.choice(rmins_3)
-        filt = random.choice(filters)
+        filt = int(random.choice(filters))
         the_nbr_loads = int(random.choice(nbr_loads))
         window = int(random.choice(windows))
         if the_nbr_loads >0:
@@ -127,22 +121,13 @@ if __name__ == "__main__" :
                 # fixed nodes
                 fixed_nodes = possible_fixed_nodes[i:i+window]
                 if(len(fixed_nodes) >1):
-                    # opposite side nodes (load nodes)
-                    # [opposite_side_nodes[0],opposite_side_nodes[params['window']],opposite_side_nodes[-1] ] here we take 3 opposite side nodes equidistant: 
-                    # the 1st node is the edge node, the 2nd at distance = window from the 1st chosen node, 
-                    # the 3rd node at distance = window from the 2nd chosen node and 2*window from the 1st chosen node 
-                    opposite_side_nodes = []
-                    element = fixed_nodes[(len(fixed_nodes) - 1 )]
-                    starting_index = (possible_fixed_nodes.index(element)+nx)%len(possible_fixed_nodes)
-                    ending_index = (possible_fixed_nodes.index(element)+2*nx)%len(possible_fixed_nodes)+1
-                    opposite_side_nodes = []
-                    if ending_index<starting_index:
-                        opposite_side_nodes = possible_fixed_nodes[starting_index: ] + possible_fixed_nodes[0:ending_index]
-                    else:
-                        opposite_side_nodes = possible_fixed_nodes[starting_index: ending_index]
-                    indices_load_nodes = np.linspace(0, len(opposite_side_nodes)-1, int(the_nbr_loads), dtype=int)
-                    opposite_side_nodes = [opposite_side_nodes[i] for i in indices_load_nodes]#random.sample(opposite_side_nodes, int(the_nbr_loads))
-                    params_list.append( {'nx':nx, 'ny':ny, 'volfraction':volfraction, 'rmin':rmin, 'filt':filt, 'fixed_nodes':fixed_nodes,'nbr_loads':the_nbr_loads, 'load_nodes':opposite_side_nodes, 'teta':teta, 'window': window} )
+                    # load nodes here are only inner nodes
+                    # i.e. no edge nodes i.e. not any fixed nodes
+
+                    non_edge_nodes = list(set(np.arange((nx+1)*(ny+1))) - set(possible_fixed_nodes))
+                    load_nodes = random.sample(non_edge_nodes, int(the_nbr_loads))
+                    load_nodes = [int(l) for l in load_nodes]
+                    params_list.append( {'nx':nx, 'ny':ny, 'volfraction':volfraction, 'rmin':rmin, 'filt':filt, 'fixed_nodes':fixed_nodes,'nbr_loads':the_nbr_loads, 'load_nodes':load_nodes, 'teta':teta, 'window': window} )
 
     pool = Pool(processes = os.cpu_count()) 
     result_df = pool.map(generate_design, params_list)
