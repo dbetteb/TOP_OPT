@@ -6,7 +6,10 @@
 
 Object-oriented and `numba` optimized version of "99 lines Topology optimization in Matlab"
 Python version. Main objective is simply is to enhance numerical experiments when changing
-topology optimization parameters and boundart condition and load cases.
+topology optimization parameters and boundary condition and load cases.
+
+Object-oriented version allows to force seamlessly changes in topology optimization settings and
+`numba` allows to speed up computations. 
 
 ## Example
 
