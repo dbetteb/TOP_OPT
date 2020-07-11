@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/dbetteb/TOP_OPT)
+
 # Object-Oriented Version of 99 lines Topology Optimization
 
 ![Alt Text](example.png)
@@ -60,7 +62,7 @@ Topology optimization
    5.4 radius filter
 ```
 
-and try to change `nx`
+and try to change `nx` (number of elements in the `x` direction)
 
 ```python
 In [8]: top.nx = 100
@@ -79,6 +81,9 @@ Topology optimization
 ## Requirements
 
 Python > 3.6
+
 numba
+
 matplotlib
+
 numpy
