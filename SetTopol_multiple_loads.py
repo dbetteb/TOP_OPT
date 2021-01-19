@@ -332,10 +332,6 @@ class TopolSettings(object):
 		if node=(__ny+1)*__nx => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
 		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
 		
-		####################################
-		############# QUESTION #############
-		####################################
-		DOES F FOLLOW THE SAME CONSTRAINTS AS THE FIXED NODES I.E. COULD WE ONLY APPLY F ON EDGE NODES OR EVERYWHERE?
 
 		"""
 	# 	if BCtype == "MBB":
@@ -574,41 +570,46 @@ class TopolSettings(object):
 	comphist = property(__getcomphist, __setcomphist)
 
 
-	def plot(self, name='test_plot'):
+	def save_design(self, name='test_plot'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
 			print("Saving plot ... ")
-
 			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255	
 			cv2.imwrite('./sample_data/design_'+name+'.png', design )
-			# design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
-			# design.axes.get_xaxis().set_visible(False)
-			# design.axes.get_yaxis().set_visible(False)
-			# plt.margins(0,0)
-			# plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
 			
-			# plt.figure()
-			# plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
-			# plt.scatter(np.arange(len(self.comphist)), self.comphist, s=120, color='r')
-			# plt.savefig('./sample_data/loss_'+name+'.png')
-			# fig, (ax1,ax2) = plt.subplots(ncols=2)
-			# ax1.set_axis_off()
-			# ims = []
-			# for i in range(len(self.comphist)):
-			# 	im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
-			# 	im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
-			# 	im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
-			# 	asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
-			# 	asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
-			# 	ax2.set_aspect(asp)
-			# 	ims.append([im1,im2])
+
+	def plot_design_evolution(self, name='test_plot'):
+		if not hasattr(self, 'hist'):
+			print('No stored data, please re run topology optimization with store=True')
+		else:
+			design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+			design.axes.get_xaxis().set_visible(False)
+			design.axes.get_yaxis().set_visible(False)
+			plt.margins(0,0)
+			plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
 			
-			# fig.savefig('./'+name)
-			# animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			plt.figure()
+			plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
+			plt.scatter(np.arange(len(self.comphist)), self.comphist, s=120, color='r')
+			plt.savefig('./sample_data/loss_'+name+'.png')
+			fig, (ax1,ax2) = plt.subplots(ncols=2)
+			ax1.set_axis_off()
+			ims = []
+			for i in range(len(self.comphist)):
+				im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+				im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
+				im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
+				asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
+				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
+				ax2.set_aspect(asp)
+				ims.append([im1,im2])
 			
-			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
-		# return fig
+			fig.savefig('./'+name)
+			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			
+		return fig
+
 
 
 @jit(nopython=True)
