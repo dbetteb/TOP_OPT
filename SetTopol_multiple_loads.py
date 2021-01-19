@@ -520,7 +520,7 @@ class TopolSettings(object):
             # remove constrained dofs
 			K = K[self.free,:][:,self.free]
 			if cond:
-				print(K)
+				#print(K)
 				cd = []
 				cd.append(np.linalg.cond(K))
 			
@@ -551,13 +551,13 @@ class TopolSettings(object):
 			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
 			if store:
 				hi.append(xphys.copy())
-			print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
-					loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+			#print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
+					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
 		self.time_required = telap
-		print("Elapsed time :'", telap," s")
+		#print("Elapsed time :'", telap," s")
 		self.__comphist = comp # list of objective function values
 		self.res = xphys
 		if store:

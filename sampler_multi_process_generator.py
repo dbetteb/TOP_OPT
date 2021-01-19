@@ -38,7 +38,24 @@ def generate_design(params):
             # NB: a load node here is an edge node
             # d3 = index of load node in the possible_fixed_nodes list / perimeter of the volume such that the perimeter of the volume = 2*(nx+ny) = len(possible_fixed_nodes)
             # Since there could be N load nodes, d3 is a list of distances
-            d3 = [possible_fixed_nodes.index(l)/len(possible_fixed_nodes) for l in top.load_nodes ]
+            # d3 = [possible_fixed_nodes.index(l)/len(possible_fixed_nodes) for l in top.load_nodes ]
+            # d1, d2 and d3 are now borned parameters => GAN can easily learn to recreate them
+            
+            # NB: a load node here is an inner node, it is best defined by its euclidean distance from node 0 and the angle between the left edge towards the line joining node 0 to current load node i
+            # i.e. dl = the euclidean distance between node0 and the load node and cos_alpha_l = the angle between y-axis (the left edge) and d (d = line joining  node 0 to node i)
+            # d = sqrt( dx(0,i)^2 + dy(0,i)^2) such that dx(0,i) = distance entre node 0 and load node i along the x axis and dy(0,i) = distance entre node 0 and load node i along the y axis => sqrt( dx(0,i)^2 + dy(0,i)^2) = euclidean distance
+            # dx(0,i) = (i//(nx+1))/nx and dy(0,i) = (i%(ny+1))/ny both distances are normalized i.e. dx(0,i) in [0,1] and dy(0,i) in [0,1] => d  in [0,1] 
+            # and the angle cos(alpha) = dy(0,i)/d => cos(alpha) in [-1,1] => all variables are borned => easier for GAN to learn them
+            # Since there could be N load nodes, d is a list of distances and cos_alpha_load
+            distance_to_loads = []
+            cos_alpha_load = []
+            for li in top.load_nodes:
+                dx0i = (li//(top.nx+1))/top.nx
+                dy0i = (li%(top.ny+1))/top.ny
+                d = np.sqrt( dx0i**2 + dy0i**2)
+                distance_to_loads.append(d)
+                cos_alpha_load.append(dy0i/d)
+            
             # d1, d2 and d3 are now borned parameters => GAN can easily learn to recreate them
 
             data = {'nx':top.nx, 'ny':top.ny, 'volume_fraction':top.vol, 'filter_rmin': top.rmin, 
@@ -48,7 +65,10 @@ def generate_design(params):
                     'Young_modulus_Emax':top.Emax, 'load_nodes':top.load_nodes, 
                     'load_orientations':top.tetas, 'load_intensities':top.valuefs,
                     'fixed_nodes':top.list_fixed_nodes, 'type_fixed_nodes':top.fixed_part, 
-                    'distanceBetween_node0_1st_fixed_node': d1, 'distanceBetween_node0_last_fixed_node':d2, 'distanceBetween_node0_load_nodes':d3,
+                    'distanceBetween_node0_1st_fixed_node': d1, 'distanceBetween_node0_last_fixed_node':d2,
+                    'EuclideandistanceBetween_node0_load_nodes':distance_to_loads, 
+                    'CosineAngle_between_leftEdge_and_loadNode': cos_alpha_load,
+                    #'distanceBetween_node0_load_nodes':d3,
                     'final_objective_function_value':top.comphist[-1], 
                     'all_objective_function_values':top.comphist, 
                     'design_reference':datetime_info, 'time_for_convergence': top.time_required}
@@ -119,11 +139,11 @@ if __name__ == "__main__" :
                         opposite_side_nodes = possible_fixed_nodes[starting_index: ] + possible_fixed_nodes[0:ending_index]
                     else:
                         opposite_side_nodes = possible_fixed_nodes[starting_index: ending_index]
-                    
-                    opposite_side_nodes = random.sample(opposite_side_nodes, int(the_nbr_loads))
+                    indices_load_nodes = np.linspace(0, len(opposite_side_nodes)-1, int(the_nbr_loads), dtype=int)
+                    opposite_side_nodes = [opposite_side_nodes[i] for i in indices_load_nodes]#random.sample(opposite_side_nodes, int(the_nbr_loads))
                     params_list.append( {'nx':nx, 'ny':ny, 'volfraction':volfraction, 'rmin':rmin, 'filt':filt, 'fixed_nodes':fixed_nodes,'nbr_loads':the_nbr_loads, 'load_nodes':opposite_side_nodes, 'teta':teta, 'window': window} )
 
-    pool = Pool(processes = os.cpu_count()-2) 
+    pool = Pool(processes = os.cpu_count()) 
     result_df = pool.map(generate_design, params_list)
     if len(result_df)>0:
         print("successful generation")

@@ -60,6 +60,8 @@ def generate_design(params):
                     'fixed_nodes':top.list_fixed_nodes, 'type_fixed_nodes':top.fixed_part, 
                     'distanceBetween_node0_1st_fixed_node': d1, 'distanceBetween_node0_last_fixed_node':d2,
                      'EuclideandistanceBetween_node0_load_nodes':distance_to_loads, 'CosineAngle_between_leftEdge_and_loadNode': cos_alpha_load,
+                    'EuclideandistanceBetween_node0_load_nodes':distance_to_loads, 
+                    'CosineAngle_between_leftEdge_and_loadNode': cos_alpha_load,
                     'final_objective_function_value':float(top.comphist[-1]), 
                     'all_objective_function_values':top.comphist, 
                     'design_reference':datetime_info, 'time_for_convergence': top.time_required}
