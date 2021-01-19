@@ -530,6 +530,7 @@ class TopolSettings(object):
 			for i in range(self.__number_of_loads):
 				u[self.free,i] = spsolve(K, f[self.free,i])
 				ce[:] = (np.dot(u[self.edofmat, i].reshape(nx*ny,8),KE) * u[self.edofmat, i].reshape(nx*ny,8) ).sum(1)
+				print(( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).shape)
 				obj   = obj + ( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).sum()
 				dc[:] = dc[:] + (-penal*xphys**(penal-1.)*(self.Emax-self.Emin))*ce
 			comp.append(obj)
