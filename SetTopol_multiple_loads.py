@@ -554,6 +554,86 @@ class TopolSettings(object):
 		if cond:
 			self.cond = cd
 
+	# @cuda.jit('void(float32, int16, int16, bool, bool, int16)')
+	# @staticmethod
+	# @jit(nopython=True)
+	def optimize_v2(self, xinit, changecriteria = 1e-3, maxiter = 50, store=False, cond = False, loop_switch = 20):
+		"""
+		   main optimizer
+		"""
+		tstart = time.time()
+		loop, change = 0, 1
+		nx, ny = self.__nx, self.__ny
+		u = self.u
+		f = self.f
+		dv = np.ones(nx*ny)
+		dc = np.ones(nx*ny)
+		ce = np.ones(nx*ny)
+		KE = lk(E = self.Emax, nu = self.nu).create_matrix()
+		x     = xinit.copy()
+		xold  = xinit.copy()
+		xphys = xinit.copy()
+		g = 0
+		comp = []
+		if store:
+			hi = []
+			hi.append(xinit.copy())
+		while (change > changecriteria) and (loop < maxiter):
+			loop += 1
+			if loop < loop_switch:
+				penal = self.penalinit
+			else:
+				penal = self.penalmed           
+			sK=((KE.flatten()[np.newaxis]).T*(self.Emin+(xphys)**penal*(self.Emax-self.Emin))).flatten(order='F')
+			K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
+            # remove constrained dofs
+			K = K[self.free,:][:,self.free]
+
+			if cond:
+				cd = []
+				cd.append(np.linalg.cond(K))
+			
+			########## multiple loads ############
+			dc = np.zeros(nx*ny)
+			obj = 0.0
+			for i in range(self.__number_of_loads):
+				u[self.free,i] = spsolve(K, f[self.free,i])
+				ce[:] = (np.dot(u[self.edofmat, i].reshape(nx*ny,8),KE) * u[self.edofmat, i].reshape(nx*ny,8) ).sum(1)
+				obj   = obj + ( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).sum()
+				dc[:] = dc[:] + (-penal*xphys**(penal-1.)*(self.Emax-self.Emin))*ce
+			comp.append(obj)
+			########## multiple loads ############
+			dv[:] = np.ones(ny*nx)
+			if self.filt == 0: # mesh-independency filter method
+				dc[:] = np.asarray((self.H*(x*dc))[np.newaxis].T/self.Hs)[:,0] / np.maximum(0.001, x)
+			elif self.filt == 1:
+				dc[:] = np.asarray(self.H*(dc[np.newaxis].T/self.Hs))[:,0]
+				dv[:] = np.asarray(self.H*(dv[np.newaxis].T/self.Hs))[:,0]
+			xold[:] = x
+			x[:], g = oc(nx, ny, x, self.vol, dc, dv, g, TopolSettings.OC_ITER)
+			if self.filt == 0:
+				xphys[:] = x
+			elif self.filt == 1:
+				xphys[:]=np.asarray(self.H*x[np.newaxis].T/self.Hs)[:,0]
+                
+			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
+			if store:
+				hi.append(xphys.copy())
+			#print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
+					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+			if loop == maxiter:
+				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
+		telap = time.time()-tstart
+		self.time_required = telap
+		#print("Elapsed time :'", telap," s")
+		self.__comphist = comp # list of objective function values
+		self.res = xphys
+		if store:
+			self.hist = hi
+		if cond:
+			self.cond = cd
+
+
 	def __getcomphist(self):
 		return self.__comphist
 
@@ -569,8 +649,8 @@ class TopolSettings(object):
 		else:
 			print("Saving plot ... ")
 
-			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255	
-			cv2.imwrite('./sample_data/design_'+name+'.png', design )
+			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255
+# 			cv2.imwrite('./sample_data/design_'+name+'.png', design )
 			# design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
 			# design.axes.get_xaxis().set_visible(False)
 			# design.axes.get_yaxis().set_visible(False)
@@ -597,7 +677,7 @@ class TopolSettings(object):
 			# animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
 			
 			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
-		# return fig
+		return design#fig
 
 
 @jit(nopython=True)
