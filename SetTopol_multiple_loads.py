@@ -12,6 +12,9 @@ from matplotlib import animation
 import cv2
 import time
 from toto import kr
+import torch
+import torch.nn.functional as F
+from compliance_predictor.ResUnet_Compliance_predictor import compliance_predictor
 
 class TopolSettings(object):
 	OC_ITER = 60
@@ -59,6 +62,11 @@ class TopolSettings(object):
 
 		self.__comphist = []
 		self.time_required = 0.0
+		ngpu = 0
+		device = torch.device("cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu")
+
+		self.Compliance_predictor = compliance_predictor(nc = 3, nf=32).to(device)
+		self.Compliance_predictor.load_state_dict(torch.load('./compliance_predictor/element_wise_compliance_predictor_on_cpu.ckpt',map_location=torch.device('cpu')))
 
 	def __repr__(self):
 		#st =f"Topology optimization \n" \
@@ -332,12 +340,17 @@ class TopolSettings(object):
 		if node=(__ny+1)*__nx => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
 		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
 		
-		####################################
-		############# QUESTION #############
-		####################################
-		DOES F FOLLOW THE SAME CONSTRAINTS AS THE FIXED NODES I.E. COULD WE ONLY APPLY F ON EDGE NODES OR EVERYWHERE?
 
 		"""
+	# 	if BCtype == "MBB":
+	# 	dofs  = np.arange(ndofs)
+	# 	fixed = np.union1d(dofs[0:2*(ny+1):2], np.array([2*(nx+1)*(ny+1)-1]))
+	# 	free  = np.setdiff1d(dofs, fixed)
+	# 	f, u = np.zeros((ndofs, load_nbr)), np.zeros((ndofs, load_nbr))
+	# 	for i in range(load_nbr):
+	# 		f[:-1, i]=-1
+	# else:
+
 		f = np.zeros((self.ndof, self.__number_of_loads))
 		for i in range(self.__number_of_loads):
 			node = nodes[i]
@@ -506,6 +519,7 @@ class TopolSettings(object):
 			else:
 				penal = self.penalmed
 			sK=((KE.flatten()[np.newaxis]).T*(self.Emin+(xphys)**penal*(self.Emax-self.Emin))).flatten(order='F')
+		
 			K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
             # remove constrained dofs
 			K = K[self.free,:][:,self.free]
@@ -520,6 +534,7 @@ class TopolSettings(object):
 			for i in range(self.__number_of_loads):
 				u[self.free,i] = spsolve(K, f[self.free,i])
 				ce[:] = (np.dot(u[self.edofmat, i].reshape(nx*ny,8),KE) * u[self.edofmat, i].reshape(nx*ny,8) ).sum(1)
+				# print(( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).shape)
 				obj   = obj + ( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).sum()
 				dc[:] = dc[:] + (-penal*xphys**(penal-1.)*(self.Emax-self.Emin))*ce
 			comp.append(obj)
@@ -540,7 +555,7 @@ class TopolSettings(object):
 			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
 			if store:
 				hi.append(xphys.copy())
-			#print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
+			# print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
 					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
@@ -554,6 +569,7 @@ class TopolSettings(object):
 		if cond:
 			self.cond = cd
 
+<<<<<<< HEAD
 	# @cuda.jit('void(float32, int16, int16, bool, bool, int16)')
 	# @staticmethod
 	# @jit(nopython=True)
@@ -561,6 +577,18 @@ class TopolSettings(object):
 		"""
 		   main optimizer
 		"""
+=======
+	def optimize_with_DL_constraint(self, changecriteria = 1e-3, maxiter = 100, store=False, cond = False, loop_switch = 20):
+		"""
+		   2nd optimizer with the addition of a new constraint computed via DL.
+		"""
+		####### element_wise_compliance Train parameters #######
+		learning_rate = 0.0002
+		optimizer = torch.optim.SGD(self.Compliance_predictor.parameters(), lr=learning_rate) 
+		loss = torch.nn.L1Loss()
+
+		####### SIMP optimization parameters #######
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 		tstart = time.time()
 		loop, change = 0, 1
 		nx, ny = self.__nx, self.__ny
@@ -570,19 +598,30 @@ class TopolSettings(object):
 		dc = np.ones(nx*ny)
 		ce = np.ones(nx*ny)
 		KE = lk(E = self.Emax, nu = self.nu).create_matrix()
+<<<<<<< HEAD
 		x     = xinit.copy()
 		xold  = xinit.copy()
 		xphys = xinit.copy()
+=======
+		x     = self.xinit.copy()
+		xold  = self.xinit.copy()
+		xphys = self.xinit.copy()
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 		g = 0
 		comp = []
 		if store:
 			hi = []
+<<<<<<< HEAD
 			hi.append(xinit.copy())
+=======
+			hi.append(self.xinit.copy())
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 		while (change > changecriteria) and (loop < maxiter):
 			loop += 1
 			if loop < loop_switch:
 				penal = self.penalinit
 			else:
+<<<<<<< HEAD
 				penal = self.penalmed           
 			sK=((KE.flatten()[np.newaxis]).T*(self.Emin+(xphys)**penal*(self.Emax-self.Emin))).flatten(order='F')
 			K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
@@ -590,6 +629,16 @@ class TopolSettings(object):
 			K = K[self.free,:][:,self.free]
 
 			if cond:
+=======
+				penal = self.penalmed
+			sK=((KE.flatten()[np.newaxis]).T*(self.Emin+(xphys)**penal*(self.Emax-self.Emin))).flatten(order='F')
+		
+			K = coo_matrix((sK, (self.iK, self.jK)), shape=(self.ndof, self.ndof)).tocsc()
+            # remove constrained dofs
+			K = K[self.free,:][:,self.free]
+			if cond:
+				#print(K)
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 				cd = []
 				cd.append(np.linalg.cond(K))
 			
@@ -599,6 +648,19 @@ class TopolSettings(object):
 			for i in range(self.__number_of_loads):
 				u[self.free,i] = spsolve(K, f[self.free,i])
 				ce[:] = (np.dot(u[self.edofmat, i].reshape(nx*ny,8),KE) * u[self.edofmat, i].reshape(nx*ny,8) ).sum(1)
+<<<<<<< HEAD
+=======
+				input_compliance_predictor = reshape_input_compliance_predictor(self.fixed, xphys, nx, ny)
+				ce2 = self.Compliance_predictor(input_compliance_predictor)#.detach().numpy().T.reshape(self.nx*self.ny,)
+				error = loss(ce2.view(nx,ny).float(), torch.from_numpy(ce[:].reshape(nx,ny).T).float())
+				error.backward()
+				optimizer.step()
+				print('loss:',error.item())
+				# DL_constraint = la difference entre input_constraint and predicted_constraint over xphys
+				# lambda1 = 0.1 # a weight regularizer for the additional constraint 
+				# ce = ce + lambda1*DL_constraint
+				# print(( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).shape)
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 				obj   = obj + ( (self.Emin+xphys**penal*(self.Emax-self.Emin))*ce ).sum()
 				dc[:] = dc[:] + (-penal*xphys**(penal-1.)*(self.Emax-self.Emin))*ce
 			comp.append(obj)
@@ -615,12 +677,20 @@ class TopolSettings(object):
 				xphys[:] = x
 			elif self.filt == 1:
 				xphys[:]=np.asarray(self.H*x[np.newaxis].T/self.Hs)[:,0]
+<<<<<<< HEAD
                 
 			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
 			if store:
 				hi.append(xphys.copy())
 			#print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
 					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+=======
+			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
+			if store:
+				hi.append(xphys.copy())
+			print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
+					loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
@@ -633,6 +703,10 @@ class TopolSettings(object):
 		if cond:
 			self.cond = cd
 
+<<<<<<< HEAD
+=======
+		torch.save(self.Compliance_predictor.state_dict(), './compliance_predictor/element_wise_compliance_predictor_on_cpu.ckpt')
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 
 	def __getcomphist(self):
 		return self.__comphist
@@ -643,11 +717,12 @@ class TopolSettings(object):
 	comphist = property(__getcomphist, __setcomphist)
 
 
-	def plot(self, name='test_plot'):
+	def save_design(self, name='test_plot'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
 			print("Saving plot ... ")
+<<<<<<< HEAD
 
 			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255
 # 			cv2.imwrite('./sample_data/design_'+name+'.png', design )
@@ -656,28 +731,47 @@ class TopolSettings(object):
 			# design.axes.get_yaxis().set_visible(False)
 			# plt.margins(0,0)
 			# plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
+=======
+			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255	
+			cv2.imwrite('./sample_data/design_'+name+'.png', design )
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 			
-			# plt.figure()
-			# plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
-			# plt.scatter(np.arange(len(self.comphist)), self.comphist, s=120, color='r')
-			# plt.savefig('./sample_data/loss_'+name+'.png')
-			# fig, (ax1,ax2) = plt.subplots(ncols=2)
-			# ax1.set_axis_off()
-			# ims = []
-			# for i in range(len(self.comphist)):
-			# 	im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
-			# 	im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
-			# 	im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
-			# 	asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
-			# 	asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
-			# 	ax2.set_aspect(asp)
-			# 	ims.append([im1,im2])
+
+	def plot_design_evolution(self, name='test_plot'):
+		if not hasattr(self, 'hist'):
+			print('No stored data, please re run topology optimization with store=True')
+		else:
+			design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+			design.axes.get_xaxis().set_visible(False)
+			design.axes.get_yaxis().set_visible(False)
+			plt.margins(0,0)
+			plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
 			
-			# fig.savefig('./'+name)
-			# animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			plt.figure()
+			plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
+			plt.scatter(np.arange(len(self.comphist)), self.comphist, s=120, color='r')
+			plt.savefig('./sample_data/loss_'+name+'.png')
+			fig, (ax1,ax2) = plt.subplots(ncols=2)
+			ax1.set_axis_off()
+			ims = []
+			for i in range(len(self.comphist)):
+				im1 = ax1.imshow(1.-self.hist[i].reshape(self.nx,self.ny).T, animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
+				im2, = ax2.plot(range(len(self.comphist)),self.comphist,'b',lw=3)
+				im2, = ax2.plot(i, self.comphist[i],'ro',markersize=8)
+				asp = np.diff(ax2.get_xlim())[0] / np.diff(ax2.get_ylim())[0]
+				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
+				ax2.set_aspect(asp)
+				ims.append([im1,im2])
 			
+<<<<<<< HEAD
 			# fig.savefig('./data/volfrac_'+str(self.__vol)+'_rmin_'+str(self.__rmin)+'_ft_'+str(self.__filt)+'_load_of_intensities_'+str(self.valuefs)+'_orientations_'+str(self.tetas)+'_on_node_number_'+str(self.load_nodes)+'_fixed_on_nodes'+str(self.fixed_part)+'.jpeg')
 		return design#fig
+=======
+			fig.savefig('./'+name)
+			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			return fig
+
+>>>>>>> cfce5d0728f361c36e5ba34997cf40ba1f912df5
 
 
 @jit(nopython=True)
@@ -694,6 +788,11 @@ def oc(nx, ny, x, volfrac, dc, dv, g, oc_iter):
 			l1 = lmid
 		else:
 			l2 = lmid
+		# xnew[:] = np.maximum(0.0,np.maximum(x-move,np.minimum(1.0,np.minimum(x+move,x*np.sqrt(-dc/lmid)))))
+		# if xnew.sum() - volfrac*nx*ny >0:
+		# 	l1 = lmid
+		# else:
+		# 	l2 = lmid
 	return xnew, gt
 
 
@@ -742,7 +841,7 @@ def createiHjHsH(nx, ny, rmin):
 	return iH, jH, sH
 
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def createBCsupport(nx, ny, ndofs, load_nbr = 1, BCtype = "cant"):
 	"""
 	    creates BC, support, RHS and initialization
@@ -762,3 +861,39 @@ def createBCsupport(nx, ny, ndofs, load_nbr = 1, BCtype = "cant"):
 		for i in range(load_nbr):
 			f[ndofs-2*ny,i] = -1
 	return fixed, free, f, u
+
+
+# @jit(nopython=True)
+def reshape_input_compliance_predictor(fixed_nodes, design, nx, ny):
+	"""This function reshapes the boundary conditions and design (xphys or 
+	density-matrix representing the mechanical design) as a 3-channel-image to be
+	input to the compliance predictor to predict the compliance at each iteration.
+
+	Parameters
+	----------
+	fixed_nodes: List
+		The fixed nodes represent the boundary conditions along the x and y axis BCx, BCy
+
+	design: np.array
+		The design is represented as an array of densities. The presence/absence of
+		material is represented as 1/0 density value.
+	nx, ny: int
+		nx = width, ny = height of design
+	Returns
+	-------
+	input_compliance_predictor: torch.tensor
+		The input_compliance_predictor is a 3-channel-image (design, BCx, BCy)
+
+	This function only works for nx, ny = 100, 100
+	"""
+	BC_matrix = np.zeros((nx+1, ny+1))
+	for f in fixed_nodes:
+		j = f//(nx+1)
+		i = f%(ny+1)
+		BC_matrix[i,j] = 1.0
+	BC = torch.from_numpy(BC_matrix).expand(1, 1, nx+1, nx+1)
+	design_matrix = torch.from_numpy((design).reshape(nx,ny).T).type(torch.FloatTensor).view(-1,1,nx,nx)
+	design_matrix = F.interpolate(design_matrix, size=[nx+1,ny+1]).view(-1,1, nx+1, nx+1)
+	input_compliance_predictor = torch.cat((design_matrix, 
+    	BC.type(torch.FloatTensor), BC.type(torch.FloatTensor),), 1)
+	return input_compliance_predictor
