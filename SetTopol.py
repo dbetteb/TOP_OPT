@@ -47,6 +47,9 @@ class TopolSettings(object):
 		self.__list_fixed_nodes = []
 		self.__free, self.__f, self.__u = createBCsupport(nx, ny, self.__ndof)[1:]
 
+		######### Objective Function Values #########
+		self.comphist = [] 
+
 	def __repr__(self):
 		st =f"Topology optimization \n" \
 		f"   {self.nx} elements in x_direction, {self.ny} elements in y direction \n" \
@@ -302,7 +305,7 @@ class TopolSettings(object):
 		and Fx = load intensity along the x-axis = value*cos(teta)
 		and Fy = load intensity along the y-axis = value*sin(teta)
 
-		if node=(__nx+1)*__ny => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
+		if node=(__ny+1)*__nx => we have chosen the upper right node to put the load on => position of Fx = x_pos = __ndof - 2*(__ny+1) - 1 = 2*__nx*(__ny+1) - 1 and position of Fy = y_pos = position of Fx + 1
 		if node = 0 => we have chosen the upper left node to put the load on => position of Fx = 0 and position of Fy = 1
 		
 		####################################
@@ -335,10 +338,10 @@ class TopolSettings(object):
 
 	f = property(getf, setf)
 
-	def getfixed(self):
+	def __getfixed(self):
 		return self.__fixed
 
-	def setfixed(self, list_nodes):
+	def __setfixed(self, list_nodes):
 		""" 
 		Sets the fixed nodes chosen by the user
 		NB: this function triggers simultaneously self.__free
@@ -381,7 +384,7 @@ class TopolSettings(object):
 		self.__free = free 
 
 
-	fixed = property(getfixed, setfixed)
+	fixed = property(__getfixed, __setfixed)
 
 	def __setu(self, value):
 		print("Cannot be changed")
