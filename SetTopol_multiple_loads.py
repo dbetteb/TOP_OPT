@@ -575,8 +575,9 @@ class TopolSettings(object):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
 			print("Saving plot ... ")
-			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255	
+			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255
 			cv2.imwrite('./sample_data/design_'+name+'.png', design )
+			return design
 			
 
 	def plot_design_evolution(self, name='test_plot'):
@@ -604,11 +605,10 @@ class TopolSettings(object):
 				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
-			
+
 			fig.savefig('./'+name)
 			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
 			return fig
-
 
 
 @jit(nopython=True)
