@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/dbetteb/TOP_OPT)
+
 # Object-Oriented Version of 99 lines Topology Optimization
 
 ![Alt Text](example.png)
@@ -6,7 +8,10 @@
 
 Object-oriented and `numba` optimized version of "99 lines Topology optimization in Matlab"
 Python version. Main objective is simply is to enhance numerical experiments when changing
-topology optimization parameters and boundart condition and load cases.
+topology optimization parameters and boundary condition and load cases.
+
+Object-oriented version allows to force seamlessly changes in topology optimization settings and
+`numba` allows to speed up computations. 
 
 ## Example
 
@@ -57,7 +62,7 @@ Topology optimization
    5.4 radius filter
 ```
 
-and try to change `nx`
+and try to change `nx` (number of elements in the `x` direction)
 
 ```python
 In [8]: top.nx = 100
@@ -76,6 +81,9 @@ Topology optimization
 ## Requirements
 
 Python > 3.6
+
 numba
+
 matplotlib
+
 numpy
