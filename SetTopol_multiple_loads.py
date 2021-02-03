@@ -547,13 +547,13 @@ class TopolSettings(object):
 			change=np.linalg.norm(x.reshape(nx*ny,1)-xold.reshape(nx*ny,1),np.inf)
 			if store:
 				hi.append(xphys.copy())
-			# print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
-					#loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
+			print("it.: {0} , obj.: {1:.3f} Vol.: {2:.3f}, ch.: {3:.3f}".format(\
+					loop,obj,(g+self.vol*nx*ny)/(nx*ny),change))
 			if loop == maxiter:
 				self.finalcomp = ( (self.Emin+xphys*(self.Emax-self.Emin))*ce ).sum()
 		telap = time.time()-tstart
 		self.time_required = telap
-		#print("Elapsed time :'", telap," s")
+		print("Elapsed time :'", telap," s")
 		self.__comphist = comp # list of objective function values
 		self.res = xphys
 		if store:
@@ -570,25 +570,20 @@ class TopolSettings(object):
 	comphist = property(__getcomphist, __setcomphist)
 
 
-	def save_design(self, name='test_plot'):
+	def save_design(self, name='result'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
-			print("Saving plot ... ")
+			print("Saving design ... ")
 			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255
-			cv2.imwrite('./sample_data/design_'+name+'.png', design )
+			cv2.imwrite('./design_'+name+'.png', design )
 			return design
 			
 
-	def plot_design_evolution(self, name='test_plot'):
+	def plot(self, name='animation'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
-			design = plt.imshow(1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T  , animated=True, cmap=plt.get_cmap('gray'), vmin=0., vmax =1.)
-			design.axes.get_xaxis().set_visible(False)
-			design.axes.get_yaxis().set_visible(False)
-			plt.margins(0,0)
-			plt.savefig('./design_'+name, bbox_inches='tight', pad_inches = 0)
 			
 			plt.figure()
 			plt.plot(np.arange(len(self.comphist)), self.comphist, 'b', lw=3)
@@ -606,8 +601,11 @@ class TopolSettings(object):
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
 
-			fig.savefig('./'+name)
-			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			anim = animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			print("Saving Animation ... ")
+			f = r"./"+name+".gif" 
+			writergif = animation.PillowWriter(fps=30) 
+			anim.save(f, writer=writergif)
 			return fig
 
 
