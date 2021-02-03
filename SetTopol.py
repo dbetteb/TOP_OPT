@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import time
 from toto import kr
+import cv2
 
 class TopolSettings(object):
 	OC_ITER = 60
@@ -338,9 +339,6 @@ class TopolSettings(object):
 
 	f = property(getf, setf)
 
-	def __getfixed(self):
-		return self.__fixed
-
 	def __setfixed(self, list_nodes):
 		""" 
 		Sets the fixed nodes chosen by the user
@@ -383,6 +381,8 @@ class TopolSettings(object):
 		self.__fixed = fixed
 		self.__free = free 
 
+	def __getfixed(self):
+		return self.__fixed
 
 	fixed = property(__getfixed, __setfixed)
 
@@ -465,7 +465,7 @@ class TopolSettings(object):
 			self.cond = cd
 
 
-	def plot(self):
+	def plot(self, name='animation'):
 		if not hasattr(self, 'hist'):
 			print('No stored data, please re run topology optimization with store=True')
 		else:
@@ -479,24 +479,21 @@ class TopolSettings(object):
 				asp /= np.abs(np.diff(ax1.get_xlim())[0] / np.diff(ax1.get_ylim())[0])
 				ax2.set_aspect(asp)
 				ims.append([im1,im2])
-			animation.ArtistAnimation(fig, ims, interval=400, blit=True, repeat_delay=400)
+			anim = animation.ArtistAnimation(fig, ims, interval=100, blit=True, repeat_delay=100)
+			
+			print("Saving Animation ... ")
+			f = r"./"+name+".gif" 
+			writergif = animation.PillowWriter(fps=30) 
+			anim.save(f, writer=writergif)
 
-			print("Saving plot ... ")
-			fixed_part = str(self.__fixed)
-
-			if (len(set(self.__list_fixed_nodes)- set(np.arange(0,self.ny+1).tolist()))==0):
-				fixed_part = "left_side"
-			elif (len(set(self.__list_fixed_nodes)- set([m*(self.__ny+1) for m in range(0,self.nx+1)]))==0):
-				fixed_part = "upper_side"
-			elif (len(set(self.__list_fixed_nodes)-set([m*(self.__ny+1)-1 for m in range(1,self.nx+2)]))==0):
-				fixed_part = "bottom_side"
-			elif (len(set(self.__list_fixed_nodes)-set(np.arange((self.ny+1)*self.nx, (self.nx+1)*(self.ny+1)).tolist()))==0):
-				fixed_part = "right_side"
-			else:
-				fixed_part = "complex"
-			fig.savefig('./data/volfrac_'+str(self.vol)+'_rmin_'+str(self.rmin)+'_ft_'+str(self.filt)+'_load_of_intensity_'+str(self.__valuef)+'_orientation_'+str(self.__teta)+'_on_node_number_'+str(self.__node)+'_fixed_on_nodes'+str(fixed_part)+'.jpeg')
-		return fig
-
+	def save_design(self, name='result'):
+		if not hasattr(self, 'hist'):
+			print('No stored data, please re run topology optimization with store=True')
+		else:
+			print("Saving design ... ")
+			design = (1.-self.hist[len(self.hist)-1].reshape(self.nx,self.ny).T)*255
+			cv2.imwrite('./design_'+name+'.png', design )
+			return design
 
 @jit(nopython=True)
 def oc(nx, ny, x, volfrac, dc, dv, g, oc_iter):
